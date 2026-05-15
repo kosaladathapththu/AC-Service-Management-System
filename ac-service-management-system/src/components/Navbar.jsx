@@ -1,36 +1,15 @@
-import { NavLink } from "react-router-dom";
-
-const navItems = [
-  { to: "/",             label: "Dashboard"     },
-  { to: "/customers",    label: "Customers"     },
-  { to: "/ac-units",     label: "AC Units"      },
-  { to: "/installations",label: "Installations" },
-  { to: "/services",     label: "Services"      },
-  { to: "/payments",     label: "Payments"      },
-  { to: "/complaints",   label: "Complaints"    },
-];
-
-function Sidebar() {
+﻿function Navbar() {
   return (
-    <aside className="sidebar">
-      <h2 className="logo">
-        AC Service
-        <span>Management System</span>
-      </h2>
-
-      <nav>
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === "/"}
-          >
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
-    </aside>
+    <header className="navbar">
+      <div>
+        <h1>AC Service Management</h1>
+        <p>Welcome to your dashboard</p>
+      </div>
+      <div className="admin-box">
+        <span>Admin</span>
+      </div>
+    </header>
   );
 }
 
-export default Sidebar;
+export default Navbar;

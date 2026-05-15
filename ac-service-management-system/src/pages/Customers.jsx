@@ -1,22 +1,46 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { customers } from "../data/dummyData";
+import { getAllData } from "../api/googleSheetApi";
 
 function Customers() {
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    loadCustomers();
+  }, []);
+
+  async function loadCustomers() {
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await getAllData("customers");
+      setCustomers(data);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return <p>Loading customers...</p>;
+  }
+
+  if (error) {
+    return <p className="error-text">Error: {error}</p>;
+  }
+
   return (
     <div>
       <div className="page-header">
-        <div>
-          <h2>Customers</h2>
-          <p>Manage all registered customer records.</p>
-        </div>
-        <button className="btn-primary">+ Add Customer</button>
+        <h2>Customers</h2>
+        <p>Manage all customer records.</p>
       </div>
 
       <div className="table-card">
-        <div className="table-card-header">
-          <h3>All Customers ({customers.length})</h3>
-        </div>
-
         <table>
           <thead>
             <tr>
@@ -33,33 +57,23 @@ function Customers() {
           <tbody>
             {customers.map((customer) => (
               <tr key={customer.id}>
-                <td style={{ color: "#6B7280", fontFamily: "monospace", fontSize: 12 }}>
-                  {customer.id}
-                </td>
-                <td style={{ fontWeight: 500 }}>{customer.name}</td>
+                <td>{customer.id}</td>
+                <td>{customer.name}</td>
                 <td>{customer.phone}</td>
                 <td>{customer.email}</td>
                 <td>{customer.address}</td>
-                <td>
-                  <span
-                    className={`badge ${
-                      customer.status === "Active"
-                        ? "badge-active"
-                        : "badge-inactive"
-                    }`}
-                  >
-                    {customer.status}
-                  </span>
-                </td>
+                <td>{customer.status}</td>
                 <td>
                   <Link className="view-link" to={`/customers/${customer.id}`}>
-                    View →
+                    View
                   </Link>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        {customers.length === 0 && <p>No customers found.</p>}
       </div>
     </div>
   );

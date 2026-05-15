@@ -1,118 +1,81 @@
+import { useEffect, useState } from "react";
 import StatCard from "../components/StatCard";
-import {
-  customers,
-  acUnits,
-  services,
-  payments,
-  complaints,
-} from "../data/dummyData";
+import { getDashboardData } from "../api/googleSheetApi";
 
 function Dashboard() {
-  const totalCustomers = customers.length;
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const servicesDueThisMonth = services.filter(
-    (s) => s.status === "Due"
-  ).length;
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
 
-  const overdueServices = services.filter(
-    (s) => s.status === "Overdue"
-  ).length;
+  async function loadDashboardData() {
+    try {
+      setLoading(true);
+      setError("");
 
-  const pendingPayments = payments.filter(
-    (p) => p.status === "Pending"
-  ).length;
+      const data = await getDashboardData();
+      setDashboardData(data);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const activeWarranties = acUnits.filter(
-    (u) => u.warrantyStatus === "Active"
-  ).length;
+  if (loading) {
+    return <p>Loading dashboard data...</p>;
+  }
 
-  const openComplaints = complaints.filter(
-    (c) => c.status === "Open"
-  ).length;
-
-  const today = new Date().toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  if (error) {
+    return <p className="error-text">Error: {error}</p>;
+  }
 
   return (
     <div>
       <div className="page-header">
-        <div>
-          <h2>Dashboard</h2>
-          <p>{today}</p>
-        </div>
+        <h2>Dashboard</h2>
+        <p>Quick overview of customers, services, payments, and warranties.</p>
       </div>
 
       <div className="stats-grid">
         <StatCard
           title="Total Customers"
-          value={totalCustomers}
+          value={dashboardData.totalCustomers}
           note="Registered customers"
-          color="blue"
         />
+
         <StatCard
-          title="Services Due"
-          value={servicesDueThisMonth}
-          note="This month"
-          color="amber"
+          title="Services Due This Month"
+          value={dashboardData.servicesDueThisMonth}
+          note="Need to schedule"
         />
+
         <StatCard
           title="Overdue Services"
-          value={overdueServices}
+          value={dashboardData.overdueServices}
           note="Need urgent action"
-          color="red"
         />
+
         <StatCard
           title="Pending Payments"
-          value={pendingPayments}
-          note="Awaiting payment"
-          color="amber"
+          value={dashboardData.pendingPayments}
+          note="Waiting for payment"
         />
+
         <StatCard
           title="Active Warranties"
-          value={activeWarranties}
+          value={dashboardData.activeWarranties}
           note="Currently valid"
-          color="green"
         />
+
         <StatCard
           title="Open Complaints"
-          value={openComplaints}
-          note="Need support"
-          color="red"
+          value={dashboardData.openComplaints}
+          note="Need support team"
         />
-      </div>
-
-      <div className="dashboard-section">
-        <h3>Today's Focus</h3>
-
-        <div className="focus-list">
-          <div className="focus-item">
-            <div className="focus-icon red">⚠️</div>
-            <div>
-              <strong>Check overdue services</strong>
-              <p>Contact customers with overdue services and arrange a service date.</p>
-            </div>
-          </div>
-
-          <div className="focus-item">
-            <div className="focus-icon amber">💳</div>
-            <div>
-              <strong>Follow up on pending payments</strong>
-              <p>Send payment reminders for the yearly service fee to all pending customers.</p>
-            </div>
-          </div>
-
-          <div className="focus-item">
-            <div className="focus-icon blue">💬</div>
-            <div>
-              <strong>Handle open complaints</strong>
-              <p>Assign a technician for all unresolved customer complaints.</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
