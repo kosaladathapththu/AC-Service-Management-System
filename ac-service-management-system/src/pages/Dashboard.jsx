@@ -11,30 +11,39 @@ function Dashboard() {
   const totalCustomers = customers.length;
 
   const servicesDueThisMonth = services.filter(
-    (service) => service.status === "Due"
+    (s) => s.status === "Due"
   ).length;
 
   const overdueServices = services.filter(
-    (service) => service.status === "Overdue"
+    (s) => s.status === "Overdue"
   ).length;
 
   const pendingPayments = payments.filter(
-    (payment) => payment.status === "Pending"
+    (p) => p.status === "Pending"
   ).length;
 
   const activeWarranties = acUnits.filter(
-    (unit) => unit.warrantyStatus === "Active"
+    (u) => u.warrantyStatus === "Active"
   ).length;
 
   const openComplaints = complaints.filter(
-    (complaint) => complaint.status === "Open"
+    (c) => c.status === "Open"
   ).length;
+
+  const today = new Date().toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <div>
       <div className="page-header">
-        <h2>Dashboard</h2>
-        <p>Quick overview of customers, services, payments, and warranties.</p>
+        <div>
+          <h2>Dashboard</h2>
+          <p>{today}</p>
+        </div>
       </div>
 
       <div className="stats-grid">
@@ -42,56 +51,66 @@ function Dashboard() {
           title="Total Customers"
           value={totalCustomers}
           note="Registered customers"
+          color="blue"
         />
-
         <StatCard
-          title="Services Due This Month"
+          title="Services Due"
           value={servicesDueThisMonth}
-          note="Need to schedule"
+          note="This month"
+          color="amber"
         />
-
         <StatCard
           title="Overdue Services"
           value={overdueServices}
           note="Need urgent action"
+          color="red"
         />
-
         <StatCard
           title="Pending Payments"
           value={pendingPayments}
-          note="Waiting for payment"
+          note="Awaiting payment"
+          color="amber"
         />
-
         <StatCard
           title="Active Warranties"
           value={activeWarranties}
           note="Currently valid"
+          color="green"
         />
-
         <StatCard
           title="Open Complaints"
           value={openComplaints}
-          note="Need support team"
+          note="Need support"
+          color="red"
         />
       </div>
 
       <div className="dashboard-section">
-        <h3>Today Focus</h3>
+        <h3>Today's Focus</h3>
 
         <div className="focus-list">
-          <div>
-            <strong>Check overdue services</strong>
-            <p>Contact customers and arrange service date.</p>
+          <div className="focus-item">
+            <div className="focus-icon red">⚠️</div>
+            <div>
+              <strong>Check overdue services</strong>
+              <p>Contact customers with overdue services and arrange a service date.</p>
+            </div>
           </div>
 
-          <div>
-            <strong>Follow pending payments</strong>
-            <p>Send payment reminder for yearly service fee.</p>
+          <div className="focus-item">
+            <div className="focus-icon amber">💳</div>
+            <div>
+              <strong>Follow up on pending payments</strong>
+              <p>Send payment reminders for the yearly service fee to all pending customers.</p>
+            </div>
           </div>
 
-          <div>
-            <strong>Handle open complaints</strong>
-            <p>Assign technician for unresolved complaints.</p>
+          <div className="focus-item">
+            <div className="focus-icon blue">💬</div>
+            <div>
+              <strong>Handle open complaints</strong>
+              <p>Assign a technician for all unresolved customer complaints.</p>
+            </div>
           </div>
         </div>
       </div>

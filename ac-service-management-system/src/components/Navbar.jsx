@@ -1,16 +1,36 @@
-function Navbar() {
-  return (
-    <header className="navbar">
-      <div>
-        <h1>AC Service Management System</h1>
-        <p>Admin Dashboard</p>
-      </div>
+import { NavLink } from "react-router-dom";
 
-      <div className="admin-box">
-        <span>Admin</span>
-      </div>
-    </header>
+const navItems = [
+  { to: "/",             label: "Dashboard"     },
+  { to: "/customers",    label: "Customers"     },
+  { to: "/ac-units",     label: "AC Units"      },
+  { to: "/installations",label: "Installations" },
+  { to: "/services",     label: "Services"      },
+  { to: "/payments",     label: "Payments"      },
+  { to: "/complaints",   label: "Complaints"    },
+];
+
+function Sidebar() {
+  return (
+    <aside className="sidebar">
+      <h2 className="logo">
+        AC Service
+        <span>Management System</span>
+      </h2>
+
+      <nav>
+        {navItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === "/"}
+          >
+            {item.label}
+          </NavLink>
+        ))}
+      </nav>
+    </aside>
   );
 }
 
-export default Navbar;
+export default Sidebar;
