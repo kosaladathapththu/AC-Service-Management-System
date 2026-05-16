@@ -1276,124 +1276,143 @@ tbody tr:hover td {
 }
 
 /* ============================================
-   ADD COMPLAINT PAGE ONLY
+   EDIT BUTTON
    ============================================ */
 
-.add-complaint-page {
-  padding-bottom: 90px;
-  overflow-y: auto;
-}
-
-/* Complaint form card only */
-.add-complaint-page .form-card {
-  padding: 0;
-  overflow: visible;
-  margin-bottom: 40px;
-}
-
-/* Section spacing */
-.add-complaint-page .form-section {
-  padding: 22px 24px 0;
-  margin-bottom: 26px;
-}
-
-/* Section title */
-.add-complaint-page .form-section h3 {
-  background: #FAFBFC;
-  border-bottom: 1px solid #F3F4F6;
-  padding: 16px 18px;
-  margin: 0 0 22px;
+.edit-btn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 7px 12px;
   border-radius: 8px;
-  color: #2563EB;
-  font-size: 15px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.edit-btn:hover {
+  background: #1d4ed8;
+}
+
+/* ============================================
+   MODAL POPUP
+   ============================================ */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.modal-card {
+  background: white;
+  width: 760px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 20px;
   font-weight: 700;
+  color: #111827;
 }
 
-/* 3-column grid for Add Complaint */
-.add-complaint-page .form-grid {
-  grid-template-columns: repeat(3, 1fr);
-  padding: 0;
-  gap: 18px 24px;
+.modal-subtitle {
+  color: #6b7280;
+  margin-bottom: 18px;
+  font-size: 13px;
 }
 
-/* Inputs */
-.add-complaint-page .form-group input,
-.add-complaint-page .form-group select {
-  height: 40px;
+/* Close X button */
+.close-btn {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 22px;
+  cursor: pointer;
+  line-height: 1;
 }
 
-/* Textareas */
-.add-complaint-page .form-group textarea {
-  min-height: 85px;
+.close-btn:hover {
+  background: #dc2626;
+  color: white;
 }
 
-/* Issue description little larger */
-.add-complaint-page textarea[name="Issue_Description"] {
-  min-height: 105px;
-}
-
-/* Full width fields */
-.add-complaint-page .full-width {
-  grid-column: 1 / -1;
-}
-
-/* Button area */
-.add-complaint-page .form-actions {
-  padding: 0 24px 24px;
-  margin-top: 0;
+/* Modal button area */
+.modal-card .form-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 12px;
+  margin-top: 18px;
 }
 
-/* Save button */
-.add-complaint-page .form-actions button {
-  background: #2563EB;
-  color: #FFFFFF;
-  border: none;
-  padding: 10px 22px;
-  border-radius: 7px;
+/* Cancel button - red/gray */
+.modal-card .cancel-btn {
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+  padding: 10px 18px;
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
+}
+
+.modal-card .cancel-btn:hover {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border-color: #fca5a5 !important;
+}
+
+/* Update Payment button - blue */
+.modal-card .form-actions button[type="submit"] {
+  background: #2563eb;
+  color: white;
+  border: 1px solid #2563eb;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.add-complaint-page .form-actions button:hover {
-  background: #1D4ED8;
+.modal-card .form-actions button[type="submit"]:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
 }
 
-.add-complaint-page .form-actions button:disabled {
-  opacity: 0.6;
+.modal-card .form-actions button[type="submit"]:disabled {
+  background: #93c5fd;
+  border-color: #93c5fd;
   cursor: not-allowed;
 }
 
-/* Disabled cost amount field */
-.add-complaint-page input:disabled {
-  background: #F3F4F6;
-  color: #9CA3AF;
-  cursor: not-allowed;
-}
-
-/* Responsive */
-@media (max-width: 1100px) {
-  .add-complaint-page .form-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
+/* Mobile */
 @media (max-width: 700px) {
-  .add-complaint-page .form-grid {
-    grid-template-columns: 1fr;
+  .modal-card .form-actions {
+    flex-direction: column-reverse;
   }
 
-  .add-complaint-page .form-section {
-    padding: 18px 16px 0;
-  }
-
-  .add-complaint-page .form-actions {
-    padding: 0 16px 20px;
-  }
-
-  .add-complaint-page .form-actions button {
+  .modal-card .form-actions button {
     width: 100%;
   }
 }

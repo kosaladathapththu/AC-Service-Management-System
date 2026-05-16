@@ -125,3 +125,26 @@ export async function addComplaint(complaintData) {
 
   return result.data;
 }
+
+export async function updateRecord(type, idColumn, id, updatedData) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "updateRecord",
+      data: {
+        type,
+        idColumn,
+        id,
+        updatedData,
+      },
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.message || "Failed to update record");
+  }
+
+  return result.data;
+}
