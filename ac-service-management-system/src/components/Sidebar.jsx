@@ -1,36 +1,95 @@
 import { NavLink } from "react-router-dom";
 import logoImage from "../assets/supun-logo.png";
 
-const navItems = [
-  { to: "/", label: "Dashboard" },
-  { to: "/add-sale", label: "New Sale" },
-  { to: "/customers", label: "Customers" },
-  { to: "/ac-units", label: "AC Units" },
-  { to: "/add-installation", label: "New Installation" },
-  { to: "/installations", label: "Installations" },
-  { to: "/add-service", label: "Create Service" },
-  { to: "/services", label: "Services" },
-  { to: "/add-payment", label: "New Payment" },
-  { to: "/payments", label: "Payments" },
-  { to: "/add-complaint", label: "New Complaint" },
-  { to: "/complaints", label: "Complaints" },
+const navGroups = [
+  {
+    label: "Overview",
+    items: [
+      { to: "/", label: "Dashboard", icon: "ti-layout-dashboard", badge: null },
+    ],
+  },
+  {
+    label: "Sales & Customers",
+    items: [
+      { to: "/add-sale", label: "New Sale", icon: "ti-plus", badge: null },
+      { to: "/customers", label: "Customers", icon: "ti-users", badge: null },
+    ],
+  },
+  {
+    label: "Units & Installations",
+    items: [
+      { to: "/ac-units", label: "AC Units", icon: "ti-air-conditioning", badge: null },
+      { to: "/add-installation", label: "New Installation", icon: "ti-tool", badge: null },
+      { to: "/installations", label: "Installations", icon: "ti-clipboard-list", badge: null },
+    ],
+  },
+  {
+    label: "Service",
+    items: [
+      { to: "/add-service", label: "Create Service", icon: "ti-settings", badge: null },
+      { to: "/services", label: "Services", icon: "ti-list-check", badge: null },
+    ],
+  },
+  {
+    label: "Payments",
+    items: [
+      { to: "/add-payment", label: "New Payment", icon: "ti-credit-card", badge: null },
+      { to: "/payments", label: "Payments", icon: "ti-report-money", badge: null },
+    ],
+  },
+  {
+    label: "Support",
+    items: [
+      { to: "/add-complaint", label: "New Complaint", icon: "ti-message-report", badge: null },
+      { to: "/complaints", label: "Complaints", icon: "ti-messages", badge: null },
+    ],
+  },
 ];
 
 function Sidebar() {
   return (
     <aside className="sidebar">
+      {/* Logo */}
       <div className="logo-box">
         <img src={logoImage} alt="Supun Group of Companies" className="sidebar-logo" />
-        
       </div>
 
+      {/* Navigation */}
       <nav>
-        {navItems.map((item) => (
-          <NavLink key={item.to} to={item.to} end={item.to === "/"}>
-            {item.label}
-          </NavLink>
+        {navGroups.map((group) => (
+          <div key={group.label} className="nav-group">
+            <div className="nav-group-label">{group.label}</div>
+            {group.items.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/"}
+                className={({ isActive }) =>
+                  isActive ? "nav-item active" : "nav-item"
+                }
+              >
+                <i className={`ti ${item.icon}`}></i>
+                <span>{item.label}</span>
+                {item.badge && (
+                  <span className="nav-badge">{item.badge}</span>
+                )}
+              </NavLink>
+            ))}
+          </div>
         ))}
       </nav>
+
+      {/* Footer */}
+      <div className="sidebar-footer">
+        <div className="sidebar-user">
+          <div className="sidebar-avatar">A</div>
+          <div className="sidebar-user-info">
+            <div className="sidebar-user-name">Administrator</div>
+            <div className="sidebar-user-role">System Admin</div>
+          </div>
+          <i className="ti ti-dots-vertical sidebar-dots"></i>
+        </div>
+      </div>
     </aside>
   );
 }
