@@ -3,14 +3,16 @@ import logoImage from "../assets/supun-logo.png";
 
 const navItems = [
   { to: "/", label: "Dashboard" },
-  { to: "/add-sale", label: "Add Sale" },
+  { to: "/add-sale", label: "New Sale" },
   { to: "/customers", label: "Customers" },
   { to: "/ac-units", label: "AC Units" },
-  { to: "/add-installation", label: "Add Installation" },
+  { to: "/add-installation", label: "New Installation" },
   { to: "/installations", label: "Installations" },
-  { to: "/add-service", label: "Add Service" },
+  { to: "/add-service", label: "Create Service" },
   { to: "/services", label: "Services" },
+  { to: "/add-payment", label: "New Payment" },
   { to: "/payments", label: "Payments" },
+  { to: "/add-complaint", label: "New Complaint" },
   { to: "/complaints", label: "Complaints" },
 ];
 

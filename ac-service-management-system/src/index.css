@@ -1156,3 +1156,244 @@ tbody tr:hover td {
   font-size: 11px;
   color: #9db3ce;
 }
+
+/* ============================================
+   ADD PAYMENT PAGE ONLY
+   ============================================ */
+
+.add-payment-page {
+  padding-bottom: 90px;
+  overflow-y: auto;
+}
+
+/* Payment form card only */
+.add-payment-page .form-card {
+  padding: 0;
+  overflow: visible;
+  margin-bottom: 40px;
+}
+
+/* Section spacing */
+.add-payment-page .form-section {
+  padding: 22px 24px 0;
+  margin-bottom: 26px;
+}
+
+/* Section title */
+.add-payment-page .form-section h3 {
+  background: #FAFBFC;
+  border-bottom: 1px solid #F3F4F6;
+  padding: 16px 18px;
+  margin: 0 0 22px;
+  border-radius: 8px;
+  color: #2563EB;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* 3-column grid for Add Payment */
+.add-payment-page .form-grid {
+  grid-template-columns: repeat(3, 1fr);
+  padding: 0;
+  gap: 18px 24px;
+}
+
+/* Inputs */
+.add-payment-page .form-group input,
+.add-payment-page .form-group select {
+  height: 40px;
+}
+
+/* Textarea */
+.add-payment-page .form-group textarea {
+  min-height: 90px;
+}
+
+/* Notes full width */
+.add-payment-page .full-width {
+  grid-column: 1 / -1;
+}
+
+/* Button area */
+.add-payment-page .form-actions {
+  padding: 0 24px 24px;
+  margin-top: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Save button */
+.add-payment-page .form-actions button {
+  background: #2563EB;
+  color: #FFFFFF;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-payment-page .form-actions button:hover {
+  background: #1D4ED8;
+}
+
+.add-payment-page .form-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Disabled date field */
+.add-payment-page input:disabled {
+  background: #F3F4F6;
+  color: #9CA3AF;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .add-payment-page .form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .add-payment-page .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .add-payment-page .form-section {
+    padding: 18px 16px 0;
+  }
+
+  .add-payment-page .form-actions {
+    padding: 0 16px 20px;
+  }
+
+  .add-payment-page .form-actions button {
+    width: 100%;
+  }
+}
+
+/* ============================================
+   ADD COMPLAINT PAGE ONLY
+   ============================================ */
+
+.add-complaint-page {
+  padding-bottom: 90px;
+  overflow-y: auto;
+}
+
+/* Complaint form card only */
+.add-complaint-page .form-card {
+  padding: 0;
+  overflow: visible;
+  margin-bottom: 40px;
+}
+
+/* Section spacing */
+.add-complaint-page .form-section {
+  padding: 22px 24px 0;
+  margin-bottom: 26px;
+}
+
+/* Section title */
+.add-complaint-page .form-section h3 {
+  background: #FAFBFC;
+  border-bottom: 1px solid #F3F4F6;
+  padding: 16px 18px;
+  margin: 0 0 22px;
+  border-radius: 8px;
+  color: #2563EB;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* 3-column grid for Add Complaint */
+.add-complaint-page .form-grid {
+  grid-template-columns: repeat(3, 1fr);
+  padding: 0;
+  gap: 18px 24px;
+}
+
+/* Inputs */
+.add-complaint-page .form-group input,
+.add-complaint-page .form-group select {
+  height: 40px;
+}
+
+/* Textareas */
+.add-complaint-page .form-group textarea {
+  min-height: 85px;
+}
+
+/* Issue description little larger */
+.add-complaint-page textarea[name="Issue_Description"] {
+  min-height: 105px;
+}
+
+/* Full width fields */
+.add-complaint-page .full-width {
+  grid-column: 1 / -1;
+}
+
+/* Button area */
+.add-complaint-page .form-actions {
+  padding: 0 24px 24px;
+  margin-top: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Save button */
+.add-complaint-page .form-actions button {
+  background: #2563EB;
+  color: #FFFFFF;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-complaint-page .form-actions button:hover {
+  background: #1D4ED8;
+}
+
+.add-complaint-page .form-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Disabled cost amount field */
+.add-complaint-page input:disabled {
+  background: #F3F4F6;
+  color: #9CA3AF;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .add-complaint-page .form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .add-complaint-page .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .add-complaint-page .form-section {
+    padding: 18px 16px 0;
+  }
+
+  .add-complaint-page .form-actions {
+    padding: 0 16px 20px;
+  }
+
+  .add-complaint-page .form-actions button {
+    width: 100%;
+  }
+}

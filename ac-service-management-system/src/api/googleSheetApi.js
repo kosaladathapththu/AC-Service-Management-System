@@ -89,3 +89,39 @@ export async function addService(serviceData) {
 
   return result.data;
 }
+
+export async function addPayment(paymentData) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "addPayment",
+      data: paymentData,
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.message || "Failed to add payment");
+  }
+
+  return result.data;
+}
+
+export async function addComplaint(complaintData) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "addComplaint",
+      data: complaintData,
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.message || "Failed to add complaint");
+  }
+
+  return result.data;
+}
