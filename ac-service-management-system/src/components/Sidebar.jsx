@@ -8,6 +8,7 @@ const navItems = [
   { to: "/ac-units",     label: "AC Units"      },
   { to: "/add-installation", label: "Add Installation" },
   { to: "/installations",label: "Installations" },
+  { to: "/add-service", label: "Add Service" },
   { to: "/services",     label: "Services"      },
   { to: "/payments",     label: "Payments"      },
   { to: "/complaints",   label: "Complaints"    },

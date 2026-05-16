@@ -71,3 +71,21 @@ export async function addInstallation(installationData) {
 
   return result.data;
 }
+
+export async function addService(serviceData) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "addService",
+      data: serviceData,
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.message || "Failed to add service");
+  }
+
+  return result.data;
+}

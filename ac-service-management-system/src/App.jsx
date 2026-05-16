@@ -11,6 +11,7 @@ import Payments from "./pages/Payments";
 import Complaints from "./pages/Complaints";
 import AddSale from "./pages/AddSale";
 import AddInstallation from "./pages/AddInstallation";
+import AddService from "./pages/AddService";
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           <Route path="ac-units" element={<ACUnits />} />
           <Route path="add-installation" element={<AddInstallation />} />
           <Route path="installations" element={<Installations />} />
+          <Route path="add-service" element={<AddService />} />
           <Route path="services" element={<Services />} />
           <Route path="payments" element={<Payments />} />
           <Route path="complaints" element={<Complaints />} />
