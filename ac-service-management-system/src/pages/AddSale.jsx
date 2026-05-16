@@ -1,6 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { addSale } from "../api/googleSheetApi";
-
 
 function AddSale() {
   const today = new Date().toISOString().split("T")[0];
@@ -93,6 +93,9 @@ function AddSale() {
       {/* Page Header */}
       <div className="page-header">
         <div>
+          <Link to="/" className="back-link">
+            ← Back to Dashboard
+          </Link>
           <h2>Add New Sale</h2>
           <p>Register a new customer and the AC unit sold to them.</p>
         </div>

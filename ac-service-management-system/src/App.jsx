@@ -15,9 +15,9 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-         <Route path="add-sale" element={<AddSale />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
+          <Route path="add-sale" element={<AddSale />} />
           <Route path="customers" element={<Customers />} />
           <Route path="customers/:id" element={<CustomerProfile />} />
           <Route path="ac-units" element={<ACUnits />} />
