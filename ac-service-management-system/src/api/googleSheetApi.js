@@ -53,3 +53,21 @@ export async function addSale(saleData) {
 
   return result.data;
 }
+
+export async function addInstallation(installationData) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "addInstallation",
+      data: installationData,
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.message || "Failed to add installation");
+  }
+
+  return result.data;
+}

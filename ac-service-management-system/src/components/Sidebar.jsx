@@ -6,6 +6,7 @@ const navItems = [
   { to: "/add-sale",   label: "Add Sale"    },
   { to: "/customers",    label: "Customers"     },
   { to: "/ac-units",     label: "AC Units"      },
+  { to: "/add-installation", label: "Add Installation" },
   { to: "/installations",label: "Installations" },
   { to: "/services",     label: "Services"      },
   { to: "/payments",     label: "Payments"      },

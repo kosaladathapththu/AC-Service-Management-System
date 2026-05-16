@@ -10,6 +10,7 @@ import Services from "./pages/Services";
 import Payments from "./pages/Payments";
 import Complaints from "./pages/Complaints";
 import AddSale from "./pages/AddSale";
+import AddInstallation from "./pages/AddInstallation";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           <Route path="customers" element={<Customers />} />
           <Route path="customers/:id" element={<CustomerProfile />} />
           <Route path="ac-units" element={<ACUnits />} />
+          <Route path="add-installation" element={<AddInstallation />} />
           <Route path="installations" element={<Installations />} />
           <Route path="services" element={<Services />} />
           <Route path="payments" element={<Payments />} />
