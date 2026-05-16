@@ -1550,3 +1550,131 @@ tbody tr:hover td {
 .ac-units-page .table-card::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+/* ============================================
+   DASHBOARD PAGE ONLY
+   ============================================ */
+
+.dashboard-page {
+  padding-bottom: 90px;
+}
+
+/* Reminder cards spacing */
+.dashboard-page .reminder-section {
+  margin-top: 22px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Reminder section header */
+.dashboard-page .reminder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  background: #ffffff;
+}
+
+.dashboard-page .reminder-header h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.dashboard-page .reminder-header p {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Count badge */
+.dashboard-page .reminder-count {
+  background: #2563eb;
+  color: #ffffff;
+  min-width: 34px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Table scroll support */
+.dashboard-page .reminder-section table {
+  min-width: 950px;
+}
+
+/* Keep profile column visible */
+.dashboard-page .reminder-section th:last-child,
+.dashboard-page .reminder-section td:last-child {
+  position: sticky;
+  right: 0;
+  background: #ffffff;
+  z-index: 5;
+  text-align: center;
+  min-width: 90px;
+}
+
+.dashboard-page .reminder-section th:last-child {
+  background: #f9fafb;
+  z-index: 6;
+}
+
+/* View button/link */
+.dashboard-page .view-link {
+  display: inline-block;
+  background: #2563eb;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.dashboard-page .view-link:hover {
+  background: #1d4ed8;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+/* Empty reminder text */
+.dashboard-page .empty-reminder {
+  padding: 18px 20px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Better horizontal scrollbar */
+.dashboard-page .reminder-section::-webkit-scrollbar {
+  height: 8px;
+}
+
+.dashboard-page .reminder-section::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.dashboard-page .reminder-section::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.dashboard-page .reminder-section::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .dashboard-page .reminder-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .dashboard-page .reminder-count {
+    align-self: flex-end;
+  }
+}
