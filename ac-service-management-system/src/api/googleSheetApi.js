@@ -35,3 +35,21 @@ export async function getCustomerProfile(customerId) {
 
   return result.data;
 }
+
+export async function addSale(saleData) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "addSale",
+      data: saleData,
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.message || "Failed to add sale");
+  }
+
+  return result.data;
+}

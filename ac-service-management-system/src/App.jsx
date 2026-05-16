@@ -9,11 +9,13 @@ import Installations from "./pages/Installations";
 import Services from "./pages/Services";
 import Payments from "./pages/Payments";
 import Complaints from "./pages/Complaints";
+import AddSale from "./pages/AddSale";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+         <Route path="add-sale" element={<AddSale />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="customers" element={<Customers />} />
