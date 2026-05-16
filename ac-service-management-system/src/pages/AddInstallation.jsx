@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { addInstallation, getAllData } from "../api/googleSheetApi";
 
 function AddInstallation() {
@@ -32,14 +33,12 @@ function AddInstallation() {
     try {
       setLoadingData(true);
       setError("");
-
       const customersData = await getAllData("customers");
       const acUnitsData = await getAllData("acUnits");
-
       setCustomers(customersData);
       setAcUnits(acUnitsData);
-    } catch (error) {
-      setError(error.message);
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoadingData(false);
     }
@@ -52,38 +51,24 @@ function AddInstallation() {
       const customerACUnits = acUnits.filter(
         (unit) => String(unit.Customer_ID).trim() === String(value).trim()
       );
-
       setFilteredACUnits(customerACUnits);
-
-      setFormData((previousData) => ({
-        ...previousData,
-        Customer_ID: value,
-        AC_ID: "",
-      }));
-
+      setFormData((prev) => ({ ...prev, Customer_ID: value, AC_ID: "" }));
       return;
     }
 
-    setFormData((previousData) => ({
-      ...previousData,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
-
     try {
       setSaving(true);
       setError("");
       setSuccessMessage("");
-
       const result = await addInstallation(formData);
-
       setSuccessMessage(
-        `Installation added successfully. Installation ID: ${result.installationId}`
+        `Installation recorded successfully — Installation ID: ${result.installationId}`
       );
-
       setFormData({
         Customer_ID: "",
         AC_ID: "",
@@ -94,13 +79,28 @@ function AddInstallation() {
         Installation_Status: "Pending",
         Notes: "",
       });
-
       setFilteredACUnits([]);
-    } catch (error) {
-      setError(error.message);
+    } catch (err) {
+      setError(err.message);
     } finally {
       setSaving(false);
     }
+  }
+
+  function handleReset() {
+    setFormData({
+      Customer_ID: "",
+      AC_ID: "",
+      Installation_Date: today,
+      Installation_Type: "In-house",
+      Technician_Name: "",
+      Outsource_Payment: "",
+      Installation_Status: "Pending",
+      Notes: "",
+    });
+    setFilteredACUnits([]);
+    setSuccessMessage("");
+    setError("");
   }
 
   function getCustomerName(customer) {
@@ -112,40 +112,68 @@ function AddInstallation() {
   }
 
   if (loadingData) {
-    return <p>Loading form data...</p>;
+    return (
+      <div className="loading-state">
+        <div className="loading-spinner" />
+        <p>Loading form data...</p>
+      </div>
+    );
   }
 
   return (
     <div>
+      {/* Page Header */}
       <div className="page-header">
-        <h2>Add Installation</h2>
-        <p>Select customer and AC unit, then add installation details.</p>
+        <div>
+          <Link to="/" className="back-link">
+            ← Back to Dashboard
+          </Link>
+          <h2>Add Installation</h2>
+          <p>Select a customer and AC unit, then fill in the installation details.</p>
+        </div>
       </div>
 
-      {successMessage && <p className="success-text">{successMessage}</p>}
-      {error && <p className="error-text">Error: {error}</p>}
+      {/* Alerts */}
+      {successMessage && (
+        <div className="alert alert-success">
+          <span className="alert-icon">✓</span>
+          {successMessage}
+        </div>
+      )}
+      {error && (
+        <div className="alert alert-error">
+          <span className="alert-icon">✕</span>
+          {error}
+        </div>
+      )}
 
-      <form className="form-card" onSubmit={handleSubmit}>
-        <div className="form-section">
-          <h3>Linked Customer & AC Unit</h3>
+      <form className="sale-form" onSubmit={handleSubmit}>
+
+        {/* Section 1 — Customer & AC Unit */}
+        <div className="form-card">
+          <div className="form-card-header">
+            <div className="form-card-icon">🔗</div>
+            <div>
+              <h3>Customer &amp; AC Unit</h3>
+              <p>Link this installation to an existing customer and their AC unit.</p>
+            </div>
+          </div>
 
           <div className="form-grid">
             <div className="form-group">
-              <label>Customer *</label>
+              <label>Customer <span className="required">*</span></label>
               <select
                 name="Customer_ID"
                 value={formData.Customer_ID}
                 onChange={handleChange}
                 required
               >
-                <option value="">Select customer</option>
-
+                <option value="">— Select a customer —</option>
                 {customers.map((customer, index) => {
-                  const customerId = getCustomerId(customer);
-
+                  const id = getCustomerId(customer);
                   return (
-                    <option key={customerId || index} value={customerId}>
-                      {customerId} - {getCustomerName(customer)}
+                    <option key={id || index} value={id}>
+                      {id} — {getCustomerName(customer)}
                     </option>
                   );
                 })}
@@ -153,7 +181,7 @@ function AddInstallation() {
             </div>
 
             <div className="form-group">
-              <label>AC Unit *</label>
+              <label>AC Unit <span className="required">*</span></label>
               <select
                 name="AC_ID"
                 value={formData.AC_ID}
@@ -162,21 +190,21 @@ function AddInstallation() {
                 disabled={!formData.Customer_ID}
               >
                 <option value="">
-                  {formData.Customer_ID
-                    ? "Select AC unit"
-                    : "Select customer first"}
+                  {formData.Customer_ID ? "— Select an AC unit —" : "— Select a customer first —"}
                 </option>
-
                 {filteredACUnits.map((unit, index) => (
                   <option key={unit.AC_ID || index} value={unit.AC_ID}>
-                    {unit.AC_ID} - {unit.AC_Model || "Unknown Model"}
+                    {unit.AC_ID} — {unit.AC_Model || "Unknown Model"}
                   </option>
                 ))}
               </select>
+              {formData.Customer_ID && filteredACUnits.length === 0 && (
+                <span className="form-hint">No AC units found for this customer.</span>
+              )}
             </div>
 
             <div className="form-group">
-              <label>Installation Date *</label>
+              <label>Installation Date <span className="required">*</span></label>
               <input
                 type="date"
                 name="Installation_Date"
@@ -188,8 +216,15 @@ function AddInstallation() {
           </div>
         </div>
 
-        <div className="form-section">
-          <h3>Installation Details</h3>
+        {/* Section 2 — Installation Details */}
+        <div className="form-card">
+          <div className="form-card-header">
+            <div className="form-card-icon">🔧</div>
+            <div>
+              <h3>Installation Details</h3>
+              <p>Technician, type, status, and any additional notes.</p>
+            </div>
+          </div>
 
           <div className="form-grid">
             <div className="form-group">
@@ -211,12 +246,12 @@ function AddInstallation() {
                 name="Technician_Name"
                 value={formData.Technician_Name}
                 onChange={handleChange}
-                placeholder="e.g. Amal"
+                placeholder="e.g. Amal Perera"
               />
             </div>
 
             <div className="form-group">
-              <label>Outsource Payment</label>
+              <label>Outsource Payment (LKR)</label>
               <input
                 type="number"
                 name="Outsource_Payment"
@@ -225,6 +260,7 @@ function AddInstallation() {
                 min="0"
                 placeholder="e.g. 5000"
               />
+              <span className="form-hint">Leave blank if in-house installation.</span>
             </div>
 
             <div className="form-group">
@@ -240,24 +276,44 @@ function AddInstallation() {
               </select>
             </div>
 
-            <div className="form-group full-width">
+            <div className="form-group form-group-full">
               <label>Notes</label>
               <textarea
                 name="Notes"
                 value={formData.Notes}
                 onChange={handleChange}
                 rows="4"
-                placeholder="Add installation notes..."
-              ></textarea>
+                placeholder="Add any installation notes, special requirements, or remarks..."
+              />
             </div>
           </div>
         </div>
 
+        {/* Form Actions */}
         <div className="form-actions">
-          <button type="submit" disabled={saving}>
-            {saving ? "Saving..." : "Save Installation"}
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={handleReset}
+            disabled={saving}
+          >
+            Clear Form
+          </button>
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={saving}
+          >
+            {saving ? (
+              <>
+                <span className="spinner" /> Saving...
+              </>
+            ) : (
+              "Save Installation"
+            )}
           </button>
         </div>
+
       </form>
     </div>
   );
