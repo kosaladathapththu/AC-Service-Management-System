@@ -692,3 +692,8 @@ tbody tr:hover td {
   background: #fef3c7;
   color: #92400e;
 }
+
+.status-info {
+  background: #dbeafe;
+  color: #1e40af;
+}
