@@ -1416,3 +1416,70 @@ tbody tr:hover td {
     width: 100%;
   }
 }
+
+/* ============================================
+   SERVICES PAGE TABLE FIX
+   ============================================ */
+
+.services-page .table-card {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Make table wider, so columns don't crush */
+.services-page table {
+  min-width: 1350px;
+}
+
+/* Keep Actions column visible on right side */
+.services-page th:last-child,
+.services-page td:last-child {
+  position: sticky;
+  right: 0;
+  background: #ffffff;
+  z-index: 5;
+  text-align: center;
+  min-width: 110px;
+}
+
+/* Header action column */
+.services-page th:last-child {
+  background: #f9fafb;
+  z-index: 6;
+}
+
+/* Edit button visible */
+.services-page .edit-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.services-page .edit-btn:hover {
+  background: #1d4ed8;
+}
+
+/* Better scrollbar */
+.services-page .table-card::-webkit-scrollbar {
+  height: 8px;
+}
+
+.services-page .table-card::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.services-page .table-card::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.services-page .table-card::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
