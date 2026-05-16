@@ -1125,3 +1125,34 @@ tbody tr:hover td {
     width: 100%;
   }
 }
+
+/* ============================================
+   SIDEBAR LOGO IMAGE
+   ============================================ */
+
+.logo-box {
+  padding: 18px 14px 16px;
+  border-bottom: 1px solid #243558;
+  text-align: center;
+}
+
+.sidebar-logo {
+  width: 145px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  margin-bottom: 10px;
+}
+
+.logo-box .logo {
+  padding: 0;
+  border-bottom: none;
+  font-size: 15px;
+  color: #ffffff;
+  text-align: center;
+}
+
+.logo-box .logo span {
+  font-size: 11px;
+  color: #9db3ce;
+}

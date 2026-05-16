@@ -2,7 +2,7 @@
   return (
     <header className="navbar">
       <div>
-        <h1>AC Service Management</h1>
+        <h1>Supun Group Of Companies - Ac Service Management</h1>
         <p>Welcome to your dashboard</p>
       </div>
       <div className="admin-box">
