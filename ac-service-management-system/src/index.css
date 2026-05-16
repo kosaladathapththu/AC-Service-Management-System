@@ -57,14 +57,13 @@ input, select, textarea {
   padding: 28px;
   flex: 1;
 }
-
 /* ============================================
    SIDEBAR
    ============================================ */
 
 .sidebar {
   width: 230px;
-  background: #1B2A4A;
+  background: #102342;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -74,13 +73,14 @@ input, select, textarea {
   overflow-y: auto;
 }
 
+/* Logo text */
 .logo {
   padding: 22px 18px 18px;
   font-size: 16px;
   font-weight: 700;
-  color: #FFFFFF;
+  color: #ffffff;
   letter-spacing: 0.3px;
-  border-bottom: 1px solid #243558;
+  border-bottom: 1px solid #1b3763;
   flex-shrink: 0;
 }
 
@@ -88,15 +88,16 @@ input, select, textarea {
   display: block;
   font-size: 11px;
   font-weight: 400;
-  color: #7B93BE;
+  color: #c7d7ee;
   margin-top: 3px;
   letter-spacing: 0;
 }
 
+/* Sidebar nav */
 .sidebar nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   padding: 14px 10px;
   flex: 1;
 }
@@ -105,24 +106,55 @@ input, select, textarea {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #9DB3CE;
+  color: #c7d7ee;
   padding: 10px 12px;
-  border-radius: 7px;
+  border-radius: 8px;
   font-size: 13.5px;
-  font-weight: 400;
+  font-weight: 500;
   transition: background 0.15s, color 0.15s;
   white-space: nowrap;
 }
 
 .sidebar nav a:hover {
-  background: #243558;
-  color: #E2EBF7;
+  background: #1b3763;
+  color: #ffffff;
 }
 
 .sidebar nav a.active {
-  background: #2563EB;
-  color: #FFFFFF;
-  font-weight: 500;
+  background: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* ============================================
+   SIDEBAR LOGO IMAGE
+   ============================================ */
+
+.logo-box {
+  padding: 18px 14px 16px;
+  border-bottom: 1px solid #1b3763;
+  text-align: center;
+}
+
+.sidebar-logo {
+  width: 150px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  margin-bottom: 10px;
+}
+
+.logo-box .logo {
+  padding: 0;
+  border-bottom: none;
+  font-size: 15px;
+  color: #ffffff;
+  text-align: center;
+}
+
+.logo-box .logo span {
+  font-size: 11px;
+  color: #c7d7ee;
 }
 
 /* ============================================
