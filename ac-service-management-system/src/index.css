@@ -1483,3 +1483,70 @@ tbody tr:hover td {
 .services-page .table-card::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* ============================================
+   AC UNITS PAGE TABLE SCROLL FIX
+   ============================================ */
+
+.ac-units-page .table-card {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Make table wide enough for all columns */
+.ac-units-page table {
+  min-width: 1350px;
+}
+
+/* Keep Actions column visible */
+.ac-units-page th:last-child,
+.ac-units-page td:last-child {
+  position: sticky;
+  right: 0;
+  background: #ffffff;
+  z-index: 5;
+  text-align: center;
+  min-width: 110px;
+}
+
+/* Header action column */
+.ac-units-page th:last-child {
+  background: #f9fafb;
+  z-index: 6;
+}
+
+/* Edit button */
+.ac-units-page .edit-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ac-units-page .edit-btn:hover {
+  background: #1d4ed8;
+}
+
+/* Better horizontal scrollbar */
+.ac-units-page .table-card::-webkit-scrollbar {
+  height: 8px;
+}
+
+.ac-units-page .table-card::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.ac-units-page .table-card::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.ac-units-page .table-card::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
