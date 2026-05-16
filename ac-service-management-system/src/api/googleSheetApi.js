@@ -148,3 +148,24 @@ export async function updateRecord(type, idColumn, id, updatedData) {
 
   return result.data;
 }
+
+export async function sendManualReminder(type, id) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "sendManualReminder",
+      data: {
+        type,
+        id,
+      },
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.message || "Failed to send reminder");
+  }
+
+  return result.data;
+}

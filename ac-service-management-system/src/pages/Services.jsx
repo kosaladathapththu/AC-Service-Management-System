@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
-import { getAllData, updateRecord } from "../api/googleSheetApi";
+import {
+  getAllData,
+  updateRecord,
+  sendManualReminder,
+} from "../api/googleSheetApi";
 
 function Services() {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sendingReminderId, setSendingReminderId] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -117,8 +122,24 @@ function Services() {
     }
   }
 
+  async function handleSendReminder(service) {
+    try {
+      setSendingReminderId(service.Service_ID);
+      setError("");
+      setSuccessMessage("");
+
+      await sendManualReminder("service", service.Service_ID);
+
+      setSuccessMessage("Service reminder email sent successfully.");
+      await loadServices();
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setSendingReminderId("");
+    }
+  }
+
   if (loading) return <p>Loading services...</p>;
-  if (error) return <p className="error-text">Error: {error}</p>;
 
   return (
   <div className="services-page">
@@ -127,6 +148,7 @@ function Services() {
         <p>Manage free and paid AC service schedules.</p>
       </div>
 
+      {error && <p className="error-text">Error: {error}</p>}
       {successMessage && <p className="success-text">{successMessage}</p>}
 
       <div className="table-card">
@@ -145,6 +167,9 @@ function Services() {
               <th>Status</th>
               <th>Payment Required</th>
               <th>Notes</th>
+              <th>Reminder Status</th>
+              <th>Reminder Sent Date</th>
+              <th>Reminder</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -184,6 +209,34 @@ function Services() {
 
                 <td>{service.Payment_Required || "-"}</td>
                 <td>{service.Notes || "-"}</td>
+
+                <td>
+                  <span
+                    className={`status-badge ${
+                      service.Reminder_Status === "Sent"
+                        ? "status-active"
+                        : "status-expired"
+                    }`}
+                  >
+                    {service.Reminder_Status || "Not Sent"}
+                  </span>
+                </td>
+
+                <td>{formatDate(service.Reminder_Sent_Date)}</td>
+
+                <td>
+                  <button
+                    className="reminder-btn"
+                    onClick={() => handleSendReminder(service)}
+                    disabled={sendingReminderId === service.Service_ID}
+                  >
+                    {sendingReminderId === service.Service_ID
+                      ? "Sending..."
+                      : service.Reminder_Status === "Sent"
+                      ? "Resend"
+                      : "Send"}
+                  </button>
+                </td>
 
                 <td>
                   <button

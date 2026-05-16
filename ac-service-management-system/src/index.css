@@ -1678,3 +1678,211 @@ tbody tr:hover td {
     align-self: flex-end;
   }
 }
+
+/* ============================================
+   PAYMENTS PAGE TABLE SCROLL + BUTTON FIX
+   ============================================ */
+
+.payments-page .table-card {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Payment table has many columns */
+.payments-page table {
+  min-width: 1650px;
+}
+
+/* Keep Reminder and Actions columns visible */
+.payments-page th:nth-last-child(2),
+.payments-page td:nth-last-child(2),
+.payments-page th:last-child,
+.payments-page td:last-child {
+  position: sticky;
+  background: #ffffff;
+  z-index: 5;
+  text-align: center;
+}
+
+/* Reminder column */
+.payments-page th:nth-last-child(2),
+.payments-page td:nth-last-child(2) {
+  right: 105px;
+  min-width: 115px;
+}
+
+/* Actions column */
+.payments-page th:last-child,
+.payments-page td:last-child {
+  right: 0;
+  min-width: 105px;
+}
+
+/* Header sticky columns */
+.payments-page th:nth-last-child(2),
+.payments-page th:last-child {
+  background: #f9fafb;
+  z-index: 6;
+}
+
+/* Send / Resend button */
+.payments-page .reminder-btn {
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  padding: 7px 13px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.payments-page .reminder-btn:hover {
+  background: #15803d;
+}
+
+.payments-page .reminder-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Edit button */
+.payments-page .edit-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.payments-page .edit-btn:hover {
+  background: #1d4ed8;
+}
+
+/* Better horizontal scrollbar */
+.payments-page .table-card::-webkit-scrollbar {
+  height: 8px;
+}
+
+.payments-page .table-card::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.payments-page .table-card::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.payments-page .table-card::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ============================================
+   SERVICES PAGE TABLE SCROLL + BUTTON FIX
+   ============================================ */
+
+.services-page .table-card {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Services table has many columns */
+.services-page table {
+  min-width: 1750px;
+}
+
+/* Keep Reminder and Actions columns visible */
+.services-page th:nth-last-child(2),
+.services-page td:nth-last-child(2),
+.services-page th:last-child,
+.services-page td:last-child {
+  position: sticky;
+  background: #ffffff;
+  z-index: 5;
+  text-align: center;
+}
+
+/* Reminder column */
+.services-page th:nth-last-child(2),
+.services-page td:nth-last-child(2) {
+  right: 105px;
+  min-width: 115px;
+}
+
+/* Actions column */
+.services-page th:last-child,
+.services-page td:last-child {
+  right: 0;
+  min-width: 105px;
+}
+
+/* Header sticky columns */
+.services-page th:nth-last-child(2),
+.services-page th:last-child {
+  background: #f9fafb;
+  z-index: 6;
+}
+
+/* Send / Resend button */
+.services-page .reminder-btn {
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  padding: 7px 13px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.services-page .reminder-btn:hover {
+  background: #15803d;
+}
+
+.services-page .reminder-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Edit button */
+.services-page .edit-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.services-page .edit-btn:hover {
+  background: #1d4ed8;
+}
+
+/* Better horizontal scrollbar */
+.services-page .table-card::-webkit-scrollbar {
+  height: 8px;
+}
+
+.services-page .table-card::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.services-page .table-card::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.services-page .table-card::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

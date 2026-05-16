@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
-import { getAllData, updateRecord } from "../api/googleSheetApi";
+import {
+  getAllData,
+  updateRecord,
+  sendManualReminder,
+} from "../api/googleSheetApi";
 
 function Payments() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sendingReminderId, setSendingReminderId] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -53,6 +58,7 @@ function Payments() {
 
   function closeEditModal() {
     setEditingPayment(null);
+
     setEditFormData({
       Payment_Year: "",
       Payment_Date: "",
@@ -113,16 +119,33 @@ function Payments() {
     }
   }
 
+  async function handleSendReminder(payment) {
+    try {
+      setSendingReminderId(payment.Payment_ID);
+      setError("");
+      setSuccessMessage("");
+
+      await sendManualReminder("payment", payment.Payment_ID);
+
+      setSuccessMessage("Payment reminder email sent successfully.");
+      await loadPayments();
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setSendingReminderId("");
+    }
+  }
+
   if (loading) return <p>Loading payments...</p>;
-  if (error) return <p className="error-text">Error: {error}</p>;
 
   return (
-    <div>
+  <div className="payments-page">
       <div className="page-header">
         <h2>Payments</h2>
         <p>Manage annual service, repair, and installation payments.</p>
       </div>
 
+      {error && <p className="error-text">Error: {error}</p>}
       {successMessage && <p className="success-text">{successMessage}</p>}
 
       <div className="table-card">
@@ -139,6 +162,9 @@ function Payments() {
               <th>Status</th>
               <th>Due Date</th>
               <th>Notes</th>
+              <th>Reminder Status</th>
+              <th>Reminder Sent Date</th>
+              <th>Reminder</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -152,6 +178,7 @@ function Payments() {
                 <td>{payment.Payment_Year || "-"}</td>
                 <td>{formatDate(payment.Payment_Date)}</td>
                 <td>{formatPrice(payment.Amount)}</td>
+
                 <td>
                   <span
                     className={`status-badge ${getPaymentTypeClass(
@@ -161,6 +188,7 @@ function Payments() {
                     {payment.Payment_Type || "-"}
                   </span>
                 </td>
+
                 <td>
                   <span
                     className={`status-badge ${getPaymentStatusClass(
@@ -170,8 +198,38 @@ function Payments() {
                     {payment.Payment_Status || "-"}
                   </span>
                 </td>
+
                 <td>{formatDate(payment.Due_Date)}</td>
                 <td>{payment.Notes || "-"}</td>
+
+                <td>
+                  <span
+                    className={`status-badge ${
+                      payment.Reminder_Status === "Sent"
+                        ? "status-active"
+                        : "status-expired"
+                    }`}
+                  >
+                    {payment.Reminder_Status || "Not Sent"}
+                  </span>
+                </td>
+
+                <td>{formatDate(payment.Reminder_Sent_Date)}</td>
+
+                <td>
+                  <button
+                    className="reminder-btn"
+                    onClick={() => handleSendReminder(payment)}
+                    disabled={sendingReminderId === payment.Payment_ID}
+                  >
+                    {sendingReminderId === payment.Payment_ID
+                      ? "Sending..."
+                      : payment.Reminder_Status === "Sent"
+                      ? "Resend"
+                      : "Send"}
+                  </button>
+                </td>
+
                 <td>
                   <button
                     className="edit-btn"
@@ -288,7 +346,11 @@ function Payments() {
               </div>
 
               <div className="form-actions">
-                <button type="button" className="cancel-btn" onClick={closeEditModal}>
+                <button
+                  type="button"
+                  className="cancel-btn"
+                  onClick={closeEditModal}
+                >
                   Cancel
                 </button>
 
