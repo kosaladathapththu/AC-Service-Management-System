@@ -1010,3 +1010,118 @@ tbody tr:hover td {
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
+
+/* ============================================
+   ADD SERVICE PAGE ONLY
+   ============================================ */
+
+.add-service-page {
+  padding-bottom: 90px;
+  overflow-y: auto;
+}
+
+/* Add Service card only */
+.add-service-page .form-card {
+  padding: 0;
+  overflow: visible;
+}
+
+/* Add Service section layout */
+.add-service-page .form-section {
+  padding: 22px 24px 0;
+  margin-bottom: 26px;
+}
+
+/* Section title */
+.add-service-page .form-section h3 {
+  background: #FAFBFC;
+  border-bottom: 1px solid #F3F4F6;
+  padding: 16px 18px;
+  margin: 0 0 22px;
+  border-radius: 8px;
+  color: #2563EB;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* 3-column grid only for Add Service */
+.add-service-page .form-grid {
+  grid-template-columns: repeat(3, 1fr);
+  padding: 0;
+  gap: 18px 24px;
+}
+
+/* Inputs height like Add Installation page */
+.add-service-page .form-group input,
+.add-service-page .form-group select {
+  height: 40px;
+}
+
+/* Notes textarea */
+.add-service-page .form-group textarea {
+  min-height: 90px;
+}
+
+/* Notes full row */
+.add-service-page .full-width {
+  grid-column: 1 / -1;
+}
+
+/* Button area */
+.add-service-page .form-actions {
+  padding: 0 24px 24px;
+  margin-top: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Save button style */
+.add-service-page .form-actions button {
+  background: #2563EB;
+  color: #FFFFFF;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-service-page .form-actions button:hover {
+  background: #1D4ED8;
+}
+
+.add-service-page .form-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Fix hidden bottom issue */
+.add-service-page .form-card {
+  margin-bottom: 40px;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .add-service-page .form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .add-service-page .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .add-service-page .form-section {
+    padding: 18px 16px 0;
+  }
+
+  .add-service-page .form-actions {
+    padding: 0 16px 20px;
+  }
+
+  .add-service-page .form-actions button {
+    width: 100%;
+  }
+}

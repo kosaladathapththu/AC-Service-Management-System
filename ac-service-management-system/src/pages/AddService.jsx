@@ -132,7 +132,7 @@ function AddService() {
   }
 
   return (
-    <div>
+    <div className="page-content add-service-page">
       <div className="page-header">
         <h2>Add Service</h2>
         <p>Select customer and AC unit, then add service schedule details.</p>
