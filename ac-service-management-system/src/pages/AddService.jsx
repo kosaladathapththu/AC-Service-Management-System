@@ -35,10 +35,8 @@ function AddService() {
     try {
       setLoadingData(true);
       setError("");
-
       const customersData = await getAllData("customers");
       const acUnitsData = await getAllData("acUnits");
-
       setCustomers(customersData);
       setAcUnits(acUnitsData);
     } catch (error) {
@@ -55,48 +53,31 @@ function AddService() {
       const customerACUnits = acUnits.filter(
         (unit) => String(unit.Customer_ID).trim() === String(value).trim()
       );
-
       setFilteredACUnits(customerACUnits);
-
-      setFormData((previousData) => ({
-        ...previousData,
-        Customer_ID: value,
-        AC_ID: "",
-      }));
-
+      setFormData((prev) => ({ ...prev, Customer_ID: value, AC_ID: "" }));
       return;
     }
 
     if (name === "Service_Type") {
-      setFormData((previousData) => ({
-        ...previousData,
+      setFormData((prev) => ({
+        ...prev,
         Service_Type: value,
         Payment_Required: value === "Paid" ? "Yes" : "No",
       }));
-
       return;
     }
 
-    setFormData((previousData) => ({
-      ...previousData,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
-
     try {
       setSaving(true);
       setError("");
       setSuccessMessage("");
-
       const result = await addService(formData);
-
-      setSuccessMessage(
-        `Service added successfully. Service ID: ${result.serviceId}`
-      );
-
+      setSuccessMessage(`Service added successfully. Service ID: ${result.serviceId}`);
       setFormData({
         Customer_ID: "",
         AC_ID: "",
@@ -110,7 +91,6 @@ function AddService() {
         Payment_Required: "No",
         Notes: "",
       });
-
       setFilteredACUnits([]);
     } catch (error) {
       setError(error.message);
@@ -127,41 +107,44 @@ function AddService() {
     return customer.Customer_ID || customer.customer_ID || customer.id || "";
   }
 
-  if (loadingData) {
-    return <p>Loading form data...</p>;
-  }
+  if (loadingData) return <p>Loading form data...</p>;
+
+  const selectedCustomer = customers.find(
+    (c) => String(getCustomerId(c)) === String(formData.Customer_ID)
+  );
+  const selectedAC = filteredACUnits.find(
+    (u) => String(u.AC_ID) === String(formData.AC_ID)
+  );
 
   return (
-    <div className="page-content add-service-page">
+    <div className="add-form-page">
       <div className="page-header">
         <h2>Add Service</h2>
-        <p>Select customer and AC unit, then add service schedule details.</p>
+        <p>Select a customer and AC unit, then fill in the service details.</p>
       </div>
 
       {successMessage && <p className="success-text">{successMessage}</p>}
       {error && <p className="error-text">Error: {error}</p>}
 
-      <form className="form-card" onSubmit={handleSubmit}>
-        <div className="form-section">
-          <h3>Linked Customer & AC Unit</h3>
+      <form onSubmit={handleSubmit}>
 
-          <div className="form-grid">
+        {/* ── Section 1: Link ── */}
+        <div className="add-form-section">
+          <div className="add-form-section-title">
+            <span className="add-form-section-num">1</span>
+            Customer &amp; AC Unit
+          </div>
+
+          <div className="add-form-grid">
             <div className="form-group">
-              <label>Customer *</label>
-              <select
-                name="Customer_ID"
-                value={formData.Customer_ID}
-                onChange={handleChange}
-                required
-              >
+              <label>Customer <span className="required">*</span></label>
+              <select name="Customer_ID" value={formData.Customer_ID} onChange={handleChange} required>
                 <option value="">Select customer</option>
-
                 {customers.map((customer, index) => {
-                  const customerId = getCustomerId(customer);
-
+                  const cid = getCustomerId(customer);
                   return (
-                    <option key={customerId || index} value={customerId}>
-                      {customerId} - {getCustomerName(customer)}
+                    <option key={cid || index} value={cid}>
+                      {cid} — {getCustomerName(customer)}
                     </option>
                   );
                 })}
@@ -169,52 +152,69 @@ function AddService() {
             </div>
 
             <div className="form-group">
-              <label>AC Unit *</label>
-              <select
-                name="AC_ID"
-                value={formData.AC_ID}
-                onChange={handleChange}
-                required
-                disabled={!formData.Customer_ID}
-              >
+              <label>AC Unit <span className="required">*</span></label>
+              <select name="AC_ID" value={formData.AC_ID} onChange={handleChange} required disabled={!formData.Customer_ID}>
                 <option value="">
-                  {formData.Customer_ID
-                    ? "Select AC unit"
-                    : "Select customer first"}
+                  {formData.Customer_ID ? "Select AC unit" : "Select customer first"}
                 </option>
-
                 {filteredACUnits.map((unit, index) => (
                   <option key={unit.AC_ID || index} value={unit.AC_ID}>
-                    {unit.AC_ID} - {unit.AC_Model || "Unknown Model"}
+                    {unit.AC_ID} — {unit.AC_Model || "Unknown Model"}
                   </option>
                 ))}
               </select>
+              {formData.Customer_ID && filteredACUnits.length === 0 && (
+                <span className="form-hint">No AC units found for this customer.</span>
+              )}
             </div>
 
             <div className="form-group">
-              <label>Service Date *</label>
-              <input
-                type="date"
-                name="Service_Date"
-                value={formData.Service_Date}
-                onChange={handleChange}
-                required
-              />
+              <label>Service Date <span className="required">*</span></label>
+              <input type="date" name="Service_Date" value={formData.Service_Date} onChange={handleChange} required />
             </div>
           </div>
+
+          {/* Selection summary */}
+          {(selectedCustomer || selectedAC) && (
+            <div className="add-form-summary">
+              {selectedCustomer && (
+                <div className="add-form-summary-item">
+                  <span className="add-form-summary-label">Customer</span>
+                  <span className="add-form-summary-value">
+                    {getCustomerName(selectedCustomer)}
+                    {selectedCustomer.Phone && <span className="add-form-summary-sub"> · {selectedCustomer.Phone}</span>}
+                  </span>
+                </div>
+              )}
+              {selectedAC && (
+                <div className="add-form-summary-item">
+                  <span className="add-form-summary-label">AC Unit</span>
+                  <span className="add-form-summary-value">
+                    {selectedAC.AC_Model || "—"}
+                    {selectedAC.Serial_Number && <span className="add-form-summary-sub"> · S/N: {selectedAC.Serial_Number}</span>}
+                    {selectedAC.Warranty_Status && (
+                      <span className={`status-badge ${getWarrantyClass(selectedAC.Warranty_Status)}`} style={{ marginLeft: "8px" }}>
+                        {selectedAC.Warranty_Status}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="form-section">
-          <h3>Service Details</h3>
+        {/* ── Section 2: Service Details ── */}
+        <div className="add-form-section">
+          <div className="add-form-section-title">
+            <span className="add-form-section-num">2</span>
+            Service Details
+          </div>
 
-          <div className="form-grid">
+          <div className="add-form-grid">
             <div className="form-group">
               <label>Service Year</label>
-              <select
-                name="Service_Year"
-                value={formData.Service_Year}
-                onChange={handleChange}
-              >
+              <select name="Service_Year" value={formData.Service_Year} onChange={handleChange}>
                 <option value="Year 1">Year 1</option>
                 <option value="Year 2">Year 2</option>
                 <option value="Year 3">Year 3</option>
@@ -225,11 +225,7 @@ function AddService() {
 
             <div className="form-group">
               <label>Service No</label>
-              <select
-                name="Service_No"
-                value={formData.Service_No}
-                onChange={handleChange}
-              >
+              <select name="Service_No" value={formData.Service_No} onChange={handleChange}>
                 <option value="1">Service 1</option>
                 <option value="2">Service 2</option>
                 <option value="3">Service 3</option>
@@ -239,11 +235,7 @@ function AddService() {
 
             <div className="form-group">
               <label>Service Type</label>
-              <select
-                name="Service_Type"
-                value={formData.Service_Type}
-                onChange={handleChange}
-              >
+              <select name="Service_Type" value={formData.Service_Type} onChange={handleChange}>
                 <option value="Free">Free</option>
                 <option value="Paid">Paid</option>
               </select>
@@ -251,11 +243,7 @@ function AddService() {
 
             <div className="form-group">
               <label>Service Category</label>
-              <select
-                name="Service_Category"
-                value={formData.Service_Category}
-                onChange={handleChange}
-              >
+              <select name="Service_Category" value={formData.Service_Category} onChange={handleChange}>
                 <option value="Normal">Normal</option>
                 <option value="High-pressure">High-pressure</option>
               </select>
@@ -263,22 +251,12 @@ function AddService() {
 
             <div className="form-group">
               <label>Technician Name</label>
-              <input
-                type="text"
-                name="Technician_Name"
-                value={formData.Technician_Name}
-                onChange={handleChange}
-                placeholder="e.g. Amal"
-              />
+              <input type="text" name="Technician_Name" value={formData.Technician_Name} onChange={handleChange} placeholder="e.g. Amal" />
             </div>
 
             <div className="form-group">
               <label>Service Status</label>
-              <select
-                name="Service_Status"
-                value={formData.Service_Status}
-                onChange={handleChange}
-              >
+              <select name="Service_Status" value={formData.Service_Status} onChange={handleChange}>
                 <option value="Pending">Pending</option>
                 <option value="Completed">Completed</option>
                 <option value="Rescheduled">Rescheduled</option>
@@ -288,37 +266,40 @@ function AddService() {
 
             <div className="form-group">
               <label>Payment Required</label>
-              <select
-                name="Payment_Required"
-                value={formData.Payment_Required}
-                onChange={handleChange}
-              >
+              <select name="Payment_Required" value={formData.Payment_Required} onChange={handleChange}>
                 <option value="No">No</option>
                 <option value="Yes">Yes</option>
               </select>
+              {formData.Service_Type === "Paid" && (
+                <span className="form-hint">Auto-set to Yes for Paid services.</span>
+              )}
             </div>
 
             <div className="form-group full-width">
               <label>Notes</label>
-              <textarea
-                name="Notes"
-                value={formData.Notes}
-                onChange={handleChange}
-                rows="4"
-                placeholder="Add service notes..."
-              ></textarea>
+              <textarea name="Notes" value={formData.Notes} onChange={handleChange} rows="3" placeholder="Add any service notes..."></textarea>
             </div>
           </div>
         </div>
 
-        <div className="form-actions">
-          <button type="submit" disabled={saving}>
+        {/* ── Submit ── */}
+        <div className="add-form-footer">
+          <button type="submit" className="add-form-submit" disabled={saving}>
             {saving ? "Saving..." : "Save Service"}
           </button>
         </div>
       </form>
     </div>
   );
+}
+
+function getWarrantyClass(status) {
+  if (!status) return "";
+  const v = String(status).toLowerCase();
+  if (v === "active") return "status-active";
+  if (v === "expired") return "status-expired";
+  if (v === "cancelled") return "status-cancelled";
+  return "";
 }
 
 export default AddService;
