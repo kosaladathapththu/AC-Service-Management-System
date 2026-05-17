@@ -2082,3 +2082,292 @@ tbody tr:hover td {
 .services-page .table-card::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+
+/* ============================================
+   RECORD CARD LIST — replaces wide tables
+   for Services, Payments, Complaints, Installations
+   Paste at the BOTTOM of index.css
+   ============================================ */
+
+.record-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty-list {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  padding: 32px 20px;
+  text-align: center;
+  font-size: 13px;
+  color: #6B7280;
+}
+
+/* ── Card shell ── */
+.record-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+}
+
+.record-card:hover {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+}
+
+/* ── Card top row (always visible) ── */
+.record-card-main {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ID pill on the left */
+.record-id-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6B7280;
+  background: #F3F4F6;
+  border: 1px solid #E5E7EB;
+  padding: 4px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Middle: summary info */
+.record-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.record-primary-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.record-customer-id {
+  font-weight: 700;
+  color: #111827;
+}
+
+.record-separator {
+  color: #D1D5DB;
+  font-size: 11px;
+}
+
+.record-ac-id,
+.record-date,
+.record-tech,
+.record-amount {
+  color: #6B7280;
+}
+
+.record-amount {
+  font-weight: 600;
+  color: #111827;
+}
+
+.record-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Short issue preview text in complaints */
+.record-issue-preview {
+  font-size: 12px;
+  color: #9CA3AF;
+  font-style: italic;
+  max-width: 340px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Neutral badge variant (year, service no) */
+.status-neutral {
+  background: #F3F4F6;
+  color: #4B5563;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Right side: buttons */
+.record-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Expand toggle */
+.expand-btn {
+  background: none;
+  border: 1px solid #E5E7EB;
+  color: #9CA3AF;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.1s, color 0.1s;
+  padding: 0;
+  line-height: 1;
+}
+
+.expand-btn:hover {
+  background: #F3F4F6;
+  color: #374151;
+}
+
+/* ── Expanded detail panel ── */
+.record-card-detail {
+  border-top: 1px solid #F3F4F6;
+  background: #FAFBFC;
+  padding: 16px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px 20px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detail-item label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.detail-item span {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.detail-full {
+  grid-column: 1 / -1;
+}
+
+/* ── Reminder button overrides for card layout ── */
+.record-actions .reminder-btn {
+  background: #16A34A;
+  color: #FFFFFF;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.record-actions .reminder-btn:hover {
+  background: #15803D;
+}
+
+.record-actions .reminder-btn:disabled {
+  background: #9CA3AF;
+  cursor: not-allowed;
+}
+
+.record-actions .edit-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .record-card-main {
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+  }
+
+  .expand-btn {
+    display: none;
+  }
+
+  .record-card-main {
+    cursor: default;
+  }
+
+  .record-card-detail {
+    display: block !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .record-card-main {
+    grid-template-columns: 1fr auto;
+    padding: 12px;
+  }
+
+  .record-id-badge {
+    display: none;
+  }
+
+  .detail-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .record-actions {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   REMOVE OLD WIDE-TABLE OVERRIDES that are
+   no longer needed (services-page and
+   payments-page table min-width rules).
+   The .services-page and .payments-page
+   selectors below reset them safely.
+   ============================================ */
+
+.services-page table,
+.payments-page table {
+  min-width: unset;
+}
+
+.services-page .table-card,
+.payments-page .table-card {
+  overflow-x: unset;
+}

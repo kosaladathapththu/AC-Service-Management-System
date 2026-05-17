@@ -12,6 +12,7 @@ function Payments() {
   const [sendingReminderId, setSendingReminderId] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
 
   const [editingPayment, setEditingPayment] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -32,7 +33,6 @@ function Payments() {
     try {
       setLoading(true);
       setError("");
-
       const data = await getAllData("payments");
       setPayments(data);
     } catch (error) {
@@ -42,9 +42,12 @@ function Payments() {
     }
   }
 
+  function toggleExpand(paymentId) {
+    setExpandedId((prev) => (prev === paymentId ? null : paymentId));
+  }
+
   function openEditModal(payment) {
     setEditingPayment(payment);
-
     setEditFormData({
       Payment_Year: payment.Payment_Year || "",
       Payment_Date: formatDateForInput(payment.Payment_Date),
@@ -58,7 +61,6 @@ function Payments() {
 
   function closeEditModal() {
     setEditingPayment(null);
-
     setEditFormData({
       Payment_Year: "",
       Payment_Date: "",
@@ -72,43 +74,28 @@ function Payments() {
 
   function handleEditChange(event) {
     const { name, value } = event.target;
-
     if (name === "Payment_Status") {
-      setEditFormData((previousData) => ({
-        ...previousData,
+      setEditFormData((prev) => ({
+        ...prev,
         Payment_Status: value,
         Payment_Date:
-          value === "Paid" && !previousData.Payment_Date
+          value === "Paid" && !prev.Payment_Date
             ? new Date().toISOString().split("T")[0]
-            : previousData.Payment_Date,
+            : prev.Payment_Date,
       }));
-
       return;
     }
-
-    setEditFormData((previousData) => ({
-      ...previousData,
-      [name]: value,
-    }));
+    setEditFormData((prev) => ({ ...prev, [name]: value }));
   }
 
   async function handleUpdatePayment(event) {
     event.preventDefault();
-
     if (!editingPayment) return;
-
     try {
       setSaving(true);
       setError("");
       setSuccessMessage("");
-
-      await updateRecord(
-        "payments",
-        "Payment_ID",
-        editingPayment.Payment_ID,
-        editFormData
-      );
-
+      await updateRecord("payments", "Payment_ID", editingPayment.Payment_ID, editFormData);
       setSuccessMessage("Payment updated successfully.");
       closeEditModal();
       await loadPayments();
@@ -119,14 +106,13 @@ function Payments() {
     }
   }
 
-  async function handleSendReminder(payment) {
+  async function handleSendReminder(payment, e) {
+    e.stopPropagation();
     try {
       setSendingReminderId(payment.Payment_ID);
       setError("");
       setSuccessMessage("");
-
       await sendManualReminder("payment", payment.Payment_ID);
-
       setSuccessMessage("Payment reminder email sent successfully.");
       await loadPayments();
     } catch (error) {
@@ -139,87 +125,54 @@ function Payments() {
   if (loading) return <p>Loading payments...</p>;
 
   return (
-  <div className="payments-page">
+    <div className="payments-page">
       <div className="page-header">
         <h2>Payments</h2>
-        <p>Manage annual service, repair, and installation payments.</p>
+        <p>Manage annual service, repair, and installation payments. Click a record to expand details.</p>
       </div>
 
       {error && <p className="error-text">Error: {error}</p>}
       {successMessage && <p className="success-text">{successMessage}</p>}
 
-      <div className="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>Payment ID</th>
-              <th>Customer ID</th>
-              <th>AC ID</th>
-              <th>Payment Year</th>
-              <th>Payment Date</th>
-              <th>Amount</th>
-              <th>Payment Type</th>
-              <th>Status</th>
-              <th>Due Date</th>
-              <th>Notes</th>
-              <th>Reminder Status</th>
-              <th>Reminder Sent Date</th>
-              <th>Reminder</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+      <div className="record-list">
+        {payments.length === 0 && <p className="empty-list">No payment records found.</p>}
 
-          <tbody>
-            {payments.map((payment, index) => (
-              <tr key={payment.Payment_ID || index}>
-                <td>{payment.Payment_ID || "-"}</td>
-                <td>{payment.Customer_ID || "-"}</td>
-                <td>{payment.AC_ID || "-"}</td>
-                <td>{payment.Payment_Year || "-"}</td>
-                <td>{formatDate(payment.Payment_Date)}</td>
-                <td>{formatPrice(payment.Amount)}</td>
+        {payments.map((payment, index) => {
+          const id = payment.Payment_ID || index;
+          const isExpanded = expandedId === id;
 
-                <td>
-                  <span
-                    className={`status-badge ${getPaymentTypeClass(
-                      payment.Payment_Type
-                    )}`}
-                  >
-                    {payment.Payment_Type || "-"}
-                  </span>
-                </td>
+          return (
+            <div key={id} className="record-card">
+              <div className="record-card-main" onClick={() => toggleExpand(id)}>
+                <span className="record-id-badge">{payment.Payment_ID || "—"}</span>
 
-                <td>
-                  <span
-                    className={`status-badge ${getPaymentStatusClass(
-                      payment.Payment_Status
-                    )}`}
-                  >
-                    {payment.Payment_Status || "-"}
-                  </span>
-                </td>
+                <div className="record-summary">
+                  <div className="record-primary-row">
+                    <span className="record-customer-id">{payment.Customer_ID || "—"}</span>
+                    <span className="record-separator">·</span>
+                    <span className="record-ac-id">AC: {payment.AC_ID || "—"}</span>
+                    <span className="record-separator">·</span>
+                    <span className="record-amount">{formatPrice(payment.Amount)}</span>
+                    <span className="record-separator">·</span>
+                    <span className="record-date">Due: {formatDate(payment.Due_Date)}</span>
+                  </div>
+                  <div className="record-badge-row">
+                    <span className={`status-badge ${getPaymentStatusClass(payment.Payment_Status)}`}>
+                      {payment.Payment_Status || "—"}
+                    </span>
+                    <span className={`status-badge ${getPaymentTypeClass(payment.Payment_Type)}`}>
+                      {payment.Payment_Type || "—"}
+                    </span>
+                    {payment.Payment_Year && (
+                      <span className="status-badge status-neutral">{payment.Payment_Year}</span>
+                    )}
+                  </div>
+                </div>
 
-                <td>{formatDate(payment.Due_Date)}</td>
-                <td>{payment.Notes || "-"}</td>
-
-                <td>
-                  <span
-                    className={`status-badge ${
-                      payment.Reminder_Status === "Sent"
-                        ? "status-active"
-                        : "status-expired"
-                    }`}
-                  >
-                    {payment.Reminder_Status || "Not Sent"}
-                  </span>
-                </td>
-
-                <td>{formatDate(payment.Reminder_Sent_Date)}</td>
-
-                <td>
+                <div className="record-actions" onClick={(e) => e.stopPropagation()}>
                   <button
                     className="reminder-btn"
-                    onClick={() => handleSendReminder(payment)}
+                    onClick={(e) => handleSendReminder(payment, e)}
                     disabled={sendingReminderId === payment.Payment_ID}
                   >
                     {sendingReminderId === payment.Payment_ID
@@ -228,22 +181,53 @@ function Payments() {
                       ? "Resend"
                       : "Send"}
                   </button>
-                </td>
-
-                <td>
-                  <button
-                    className="edit-btn"
-                    onClick={() => openEditModal(payment)}
-                  >
+                  <button className="edit-btn" onClick={() => openEditModal(payment)}>
                     Edit
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
 
-        {payments.length === 0 && <p>No payment records found.</p>}
+                <button className="expand-btn" aria-label="Expand record">
+                  {isExpanded ? "▴" : "▾"}
+                </button>
+              </div>
+
+              {isExpanded && (
+                <div className="record-card-detail">
+                  <div className="detail-grid">
+                    <div className="detail-item">
+                      <label>Payment Date</label>
+                      <span>{formatDate(payment.Payment_Date)}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Due Date</label>
+                      <span>{formatDate(payment.Due_Date)}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Payment Year</label>
+                      <span>{payment.Payment_Year || "—"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Reminder Status</label>
+                      <span className={`status-badge ${payment.Reminder_Status === "Sent" ? "status-active" : "status-expired"}`}>
+                        {payment.Reminder_Status || "Not Sent"}
+                      </span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Reminder Sent Date</label>
+                      <span>{formatDate(payment.Reminder_Sent_Date)}</span>
+                    </div>
+                    {payment.Notes && (
+                      <div className="detail-item detail-full">
+                        <label>Notes</label>
+                        <span>{payment.Notes}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {editingPayment && (
@@ -251,24 +235,16 @@ function Payments() {
           <div className="modal-card">
             <div className="modal-header">
               <h3>Edit Payment</h3>
-              <button className="close-btn" onClick={closeEditModal}>
-                ×
-              </button>
+              <button className="close-btn" onClick={closeEditModal}>×</button>
             </div>
-
             <p className="modal-subtitle">
               Payment ID: <strong>{editingPayment.Payment_ID}</strong>
             </p>
-
             <form onSubmit={handleUpdatePayment}>
               <div className="form-grid">
                 <div className="form-group">
                   <label>Payment Year</label>
-                  <select
-                    name="Payment_Year"
-                    value={editFormData.Payment_Year}
-                    onChange={handleEditChange}
-                  >
+                  <select name="Payment_Year" value={editFormData.Payment_Year} onChange={handleEditChange}>
                     <option value="">Not applicable</option>
                     <option value="Year 1">Year 1</option>
                     <option value="Year 2">Year 2</option>
@@ -277,86 +253,41 @@ function Payments() {
                     <option value="Year 5">Year 5</option>
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label>Payment Type</label>
-                  <select
-                    name="Payment_Type"
-                    value={editFormData.Payment_Type}
-                    onChange={handleEditChange}
-                  >
+                  <select name="Payment_Type" value={editFormData.Payment_Type} onChange={handleEditChange}>
                     <option value="Annual Service">Annual Service</option>
                     <option value="Repair">Repair</option>
                     <option value="Installation">Installation</option>
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label>Amount</label>
-                  <input
-                    type="number"
-                    name="Amount"
-                    value={editFormData.Amount}
-                    onChange={handleEditChange}
-                    min="0"
-                  />
+                  <input type="number" name="Amount" value={editFormData.Amount} onChange={handleEditChange} min="0" />
                 </div>
-
                 <div className="form-group">
                   <label>Payment Status</label>
-                  <select
-                    name="Payment_Status"
-                    value={editFormData.Payment_Status}
-                    onChange={handleEditChange}
-                  >
+                  <select name="Payment_Status" value={editFormData.Payment_Status} onChange={handleEditChange}>
                     <option value="Paid">Paid</option>
                     <option value="Pending">Pending</option>
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label>Payment Date</label>
-                  <input
-                    type="date"
-                    name="Payment_Date"
-                    value={editFormData.Payment_Date}
-                    onChange={handleEditChange}
-                  />
+                  <input type="date" name="Payment_Date" value={editFormData.Payment_Date} onChange={handleEditChange} />
                 </div>
-
                 <div className="form-group">
                   <label>Due Date</label>
-                  <input
-                    type="date"
-                    name="Due_Date"
-                    value={editFormData.Due_Date}
-                    onChange={handleEditChange}
-                  />
+                  <input type="date" name="Due_Date" value={editFormData.Due_Date} onChange={handleEditChange} />
                 </div>
-
                 <div className="form-group full-width">
                   <label>Notes</label>
-                  <textarea
-                    name="Notes"
-                    value={editFormData.Notes}
-                    onChange={handleEditChange}
-                    rows="3"
-                  ></textarea>
+                  <textarea name="Notes" value={editFormData.Notes} onChange={handleEditChange} rows="3"></textarea>
                 </div>
               </div>
-
               <div className="form-actions">
-                <button
-                  type="button"
-                  className="cancel-btn"
-                  onClick={closeEditModal}
-                >
-                  Cancel
-                </button>
-
-                <button type="submit" disabled={saving}>
-                  {saving ? "Updating..." : "Update Payment"}
-                </button>
+                <button type="button" className="cancel-btn" onClick={closeEditModal}>Cancel</button>
+                <button type="submit" disabled={saving}>{saving ? "Updating..." : "Update Payment"}</button>
               </div>
             </form>
           </div>
@@ -367,52 +298,40 @@ function Payments() {
 }
 
 function formatDate(value) {
-  if (!value) return "-";
-
+  if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-
   return date.toLocaleDateString("en-GB");
 }
 
 function formatDateForInput(value) {
   if (!value) return "";
-
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-
   return date.toISOString().split("T")[0];
 }
 
 function formatPrice(value) {
-  if (!value) return "-";
-
-  const numberValue = Number(value);
-  if (Number.isNaN(numberValue)) return String(value);
-
-  return `Rs. ${numberValue.toLocaleString("en-LK")}`;
+  if (!value) return "—";
+  const n = Number(value);
+  if (Number.isNaN(n)) return String(value);
+  return `Rs. ${n.toLocaleString("en-LK")}`;
 }
 
 function getPaymentStatusClass(status) {
   if (!status) return "";
-
-  const value = String(status).toLowerCase();
-
-  if (value === "paid") return "status-active";
-  if (value === "pending") return "status-expired";
-
+  const v = String(status).toLowerCase();
+  if (v === "paid") return "status-active";
+  if (v === "pending") return "status-expired";
   return "";
 }
 
 function getPaymentTypeClass(type) {
   if (!type) return "";
-
-  const value = String(type).toLowerCase();
-
-  if (value === "annual service") return "status-info";
-  if (value === "repair") return "status-expired";
-  if (value === "installation") return "status-active";
-
+  const v = String(type).toLowerCase();
+  if (v === "annual service") return "status-info";
+  if (v === "repair") return "status-expired";
+  if (v === "installation") return "status-active";
   return "";
 }
 

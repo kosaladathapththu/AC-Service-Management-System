@@ -12,6 +12,7 @@ function Services() {
   const [sendingReminderId, setSendingReminderId] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
 
   const [editingService, setEditingService] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -34,7 +35,6 @@ function Services() {
     try {
       setLoading(true);
       setError("");
-
       const data = await getAllData("services");
       setServices(data);
     } catch (error) {
@@ -44,9 +44,12 @@ function Services() {
     }
   }
 
+  function toggleExpand(serviceId) {
+    setExpandedId((prev) => (prev === serviceId ? null : serviceId));
+  }
+
   function openEditModal(service) {
     setEditingService(service);
-
     setEditFormData({
       Service_Date: formatDateForInput(service.Service_Date),
       Service_Year: service.Service_Year || "",
@@ -62,7 +65,6 @@ function Services() {
 
   function closeEditModal() {
     setEditingService(null);
-
     setEditFormData({
       Service_Date: "",
       Service_Year: "",
@@ -78,40 +80,25 @@ function Services() {
 
   function handleEditChange(event) {
     const { name, value } = event.target;
-
     if (name === "Service_Type") {
-      setEditFormData((previousData) => ({
-        ...previousData,
+      setEditFormData((prev) => ({
+        ...prev,
         Service_Type: value,
         Payment_Required: value === "Paid" ? "Yes" : "No",
       }));
-
       return;
     }
-
-    setEditFormData((previousData) => ({
-      ...previousData,
-      [name]: value,
-    }));
+    setEditFormData((prev) => ({ ...prev, [name]: value }));
   }
 
   async function handleUpdateService(event) {
     event.preventDefault();
-
     if (!editingService) return;
-
     try {
       setSaving(true);
       setError("");
       setSuccessMessage("");
-
-      await updateRecord(
-        "services",
-        "Service_ID",
-        editingService.Service_ID,
-        editFormData
-      );
-
+      await updateRecord("services", "Service_ID", editingService.Service_ID, editFormData);
       setSuccessMessage("Service updated successfully.");
       closeEditModal();
       await loadServices();
@@ -122,14 +109,13 @@ function Services() {
     }
   }
 
-  async function handleSendReminder(service) {
+  async function handleSendReminder(service, e) {
+    e.stopPropagation();
     try {
       setSendingReminderId(service.Service_ID);
       setError("");
       setSuccessMessage("");
-
       await sendManualReminder("service", service.Service_ID);
-
       setSuccessMessage("Service reminder email sent successfully.");
       await loadServices();
     } catch (error) {
@@ -142,92 +128,64 @@ function Services() {
   if (loading) return <p>Loading services...</p>;
 
   return (
-  <div className="services-page">
+    <div className="services-page">
       <div className="page-header">
         <h2>Services</h2>
-        <p>Manage free and paid AC service schedules.</p>
+        <p>Manage free and paid AC service schedules. Click a record to expand details.</p>
       </div>
 
       {error && <p className="error-text">Error: {error}</p>}
       {successMessage && <p className="success-text">{successMessage}</p>}
 
-      <div className="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>Service ID</th>
-              <th>Customer ID</th>
-              <th>AC ID</th>
-              <th>Service Date</th>
-              <th>Service Year</th>
-              <th>Service No</th>
-              <th>Service Type</th>
-              <th>Category</th>
-              <th>Technician</th>
-              <th>Status</th>
-              <th>Payment Required</th>
-              <th>Notes</th>
-              <th>Reminder Status</th>
-              <th>Reminder Sent Date</th>
-              <th>Reminder</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+      <div className="record-list">
+        {services.length === 0 && <p className="empty-list">No service records found.</p>}
 
-          <tbody>
-            {services.map((service, index) => (
-              <tr key={service.Service_ID || index}>
-                <td>{service.Service_ID || "-"}</td>
-                <td>{service.Customer_ID || "-"}</td>
-                <td>{service.AC_ID || "-"}</td>
-                <td>{formatDate(service.Service_Date)}</td>
-                <td>{service.Service_Year || "-"}</td>
-                <td>{service.Service_No || "-"}</td>
+        {services.map((service, index) => {
+          const id = service.Service_ID || index;
+          const isExpanded = expandedId === id;
 
-                <td>
-                  <span
-                    className={`status-badge ${getServiceTypeClass(
-                      service.Service_Type
-                    )}`}
-                  >
-                    {service.Service_Type || "-"}
-                  </span>
-                </td>
+          return (
+            <div key={id} className="record-card">
+              <div
+                className="record-card-main"
+                onClick={() => toggleExpand(id)}
+              >
+                <span className="record-id-badge">{service.Service_ID || "—"}</span>
 
-                <td>{service.Service_Category || "-"}</td>
-                <td>{service.Technician_Name || "-"}</td>
+                <div className="record-summary">
+                  <div className="record-primary-row">
+                    <span className="record-customer-id">{service.Customer_ID || "—"}</span>
+                    <span className="record-separator">·</span>
+                    <span className="record-ac-id">AC: {service.AC_ID || "—"}</span>
+                    <span className="record-separator">·</span>
+                    <span className="record-date">{formatDate(service.Service_Date)}</span>
+                    {service.Technician_Name && (
+                      <>
+                        <span className="record-separator">·</span>
+                        <span className="record-tech">{service.Technician_Name}</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="record-badge-row">
+                    <span className={`status-badge ${getServiceStatusClass(service.Service_Status)}`}>
+                      {service.Service_Status || "—"}
+                    </span>
+                    <span className={`status-badge ${getServiceTypeClass(service.Service_Type)}`}>
+                      {service.Service_Type || "—"}
+                    </span>
+                    {service.Service_Year && (
+                      <span className="status-badge status-neutral">{service.Service_Year}</span>
+                    )}
+                    {service.Service_No && (
+                      <span className="status-badge status-neutral">Service {service.Service_No}</span>
+                    )}
+                  </div>
+                </div>
 
-                <td>
-                  <span
-                    className={`status-badge ${getServiceStatusClass(
-                      service.Service_Status
-                    )}`}
-                  >
-                    {service.Service_Status || "-"}
-                  </span>
-                </td>
-
-                <td>{service.Payment_Required || "-"}</td>
-                <td>{service.Notes || "-"}</td>
-
-                <td>
-                  <span
-                    className={`status-badge ${
-                      service.Reminder_Status === "Sent"
-                        ? "status-active"
-                        : "status-expired"
-                    }`}
-                  >
-                    {service.Reminder_Status || "Not Sent"}
-                  </span>
-                </td>
-
-                <td>{formatDate(service.Reminder_Sent_Date)}</td>
-
-                <td>
+                <div className="record-actions" onClick={(e) => e.stopPropagation()}>
                   <button
                     className="reminder-btn"
-                    onClick={() => handleSendReminder(service)}
+                    onClick={(e) => handleSendReminder(service, e)}
                     disabled={sendingReminderId === service.Service_ID}
                   >
                     {sendingReminderId === service.Service_ID
@@ -236,22 +194,57 @@ function Services() {
                       ? "Resend"
                       : "Send"}
                   </button>
-                </td>
-
-                <td>
-                  <button
-                    className="edit-btn"
-                    onClick={() => openEditModal(service)}
-                  >
+                  <button className="edit-btn" onClick={() => openEditModal(service)}>
                     Edit
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
 
-        {services.length === 0 && <p>No service records found.</p>}
+                <button className="expand-btn" aria-label="Expand record">
+                  {isExpanded ? "▴" : "▾"}
+                </button>
+              </div>
+
+              {isExpanded && (
+                <div className="record-card-detail">
+                  <div className="detail-grid">
+                    <div className="detail-item">
+                      <label>Service Year</label>
+                      <span>{service.Service_Year || "—"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Service No</label>
+                      <span>{service.Service_No || "—"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Category</label>
+                      <span>{service.Service_Category || "—"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Payment Required</label>
+                      <span>{service.Payment_Required || "—"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Reminder Status</label>
+                      <span className={`status-badge ${service.Reminder_Status === "Sent" ? "status-active" : "status-expired"}`}>
+                        {service.Reminder_Status || "Not Sent"}
+                      </span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Reminder Sent Date</label>
+                      <span>{formatDate(service.Reminder_Sent_Date)}</span>
+                    </div>
+                    {service.Notes && (
+                      <div className="detail-item detail-full">
+                        <label>Notes</label>
+                        <span>{service.Notes}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {editingService && (
@@ -259,34 +252,20 @@ function Services() {
           <div className="modal-card">
             <div className="modal-header">
               <h3>Edit Service</h3>
-              <button className="close-btn" onClick={closeEditModal}>
-                ×
-              </button>
+              <button className="close-btn" onClick={closeEditModal}>×</button>
             </div>
-
             <p className="modal-subtitle">
               Service ID: <strong>{editingService.Service_ID}</strong>
             </p>
-
             <form onSubmit={handleUpdateService}>
               <div className="form-grid">
                 <div className="form-group">
                   <label>Service Date</label>
-                  <input
-                    type="date"
-                    name="Service_Date"
-                    value={editFormData.Service_Date}
-                    onChange={handleEditChange}
-                  />
+                  <input type="date" name="Service_Date" value={editFormData.Service_Date} onChange={handleEditChange} />
                 </div>
-
                 <div className="form-group">
                   <label>Service Year</label>
-                  <select
-                    name="Service_Year"
-                    value={editFormData.Service_Year}
-                    onChange={handleEditChange}
-                  >
+                  <select name="Service_Year" value={editFormData.Service_Year} onChange={handleEditChange}>
                     <option value="">Select year</option>
                     <option value="Year 1">Year 1</option>
                     <option value="Year 2">Year 2</option>
@@ -295,14 +274,9 @@ function Services() {
                     <option value="Year 5">Year 5</option>
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label>Service No</label>
-                  <select
-                    name="Service_No"
-                    value={editFormData.Service_No}
-                    onChange={handleEditChange}
-                  >
+                  <select name="Service_No" value={editFormData.Service_No} onChange={handleEditChange}>
                     <option value="">Select service no</option>
                     <option value="1">Service 1</option>
                     <option value="2">Service 2</option>
@@ -310,90 +284,48 @@ function Services() {
                     <option value="4">Service 4</option>
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label>Service Type</label>
-                  <select
-                    name="Service_Type"
-                    value={editFormData.Service_Type}
-                    onChange={handleEditChange}
-                  >
+                  <select name="Service_Type" value={editFormData.Service_Type} onChange={handleEditChange}>
                     <option value="Free">Free</option>
                     <option value="Paid">Paid</option>
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label>Service Category</label>
-                  <select
-                    name="Service_Category"
-                    value={editFormData.Service_Category}
-                    onChange={handleEditChange}
-                  >
+                  <select name="Service_Category" value={editFormData.Service_Category} onChange={handleEditChange}>
                     <option value="Normal">Normal</option>
                     <option value="High-pressure">High-pressure</option>
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label>Technician Name</label>
-                  <input
-                    type="text"
-                    name="Technician_Name"
-                    value={editFormData.Technician_Name}
-                    onChange={handleEditChange}
-                  />
+                  <input type="text" name="Technician_Name" value={editFormData.Technician_Name} onChange={handleEditChange} />
                 </div>
-
                 <div className="form-group">
                   <label>Service Status</label>
-                  <select
-                    name="Service_Status"
-                    value={editFormData.Service_Status}
-                    onChange={handleEditChange}
-                  >
+                  <select name="Service_Status" value={editFormData.Service_Status} onChange={handleEditChange}>
                     <option value="Pending">Pending</option>
                     <option value="Completed">Completed</option>
                     <option value="Rescheduled">Rescheduled</option>
                     <option value="Cancelled">Cancelled</option>
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label>Payment Required</label>
-                  <select
-                    name="Payment_Required"
-                    value={editFormData.Payment_Required}
-                    onChange={handleEditChange}
-                  >
+                  <select name="Payment_Required" value={editFormData.Payment_Required} onChange={handleEditChange}>
                     <option value="No">No</option>
                     <option value="Yes">Yes</option>
                   </select>
                 </div>
-
                 <div className="form-group full-width">
                   <label>Notes</label>
-                  <textarea
-                    name="Notes"
-                    value={editFormData.Notes}
-                    onChange={handleEditChange}
-                    rows="3"
-                  ></textarea>
+                  <textarea name="Notes" value={editFormData.Notes} onChange={handleEditChange} rows="3"></textarea>
                 </div>
               </div>
-
               <div className="form-actions">
-                <button
-                  type="button"
-                  className="cancel-btn"
-                  onClick={closeEditModal}
-                >
-                  Cancel
-                </button>
-
-                <button type="submit" disabled={saving}>
-                  {saving ? "Updating..." : "Update Service"}
-                </button>
+                <button type="button" className="cancel-btn" onClick={closeEditModal}>Cancel</button>
+                <button type="submit" disabled={saving}>{saving ? "Updating..." : "Update Service"}</button>
               </div>
             </form>
           </div>
@@ -404,44 +336,34 @@ function Services() {
 }
 
 function formatDate(value) {
-  if (!value) return "-";
-
+  if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-
   return date.toLocaleDateString("en-GB");
 }
 
 function formatDateForInput(value) {
   if (!value) return "";
-
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-
   return date.toISOString().split("T")[0];
 }
 
 function getServiceStatusClass(status) {
   if (!status) return "";
-
-  const value = String(status).toLowerCase();
-
-  if (value === "completed") return "status-active";
-  if (value === "pending") return "status-expired";
-  if (value === "rescheduled") return "status-info";
-  if (value === "cancelled") return "status-cancelled";
-
+  const v = String(status).toLowerCase();
+  if (v === "completed") return "status-active";
+  if (v === "pending") return "status-expired";
+  if (v === "rescheduled") return "status-info";
+  if (v === "cancelled") return "status-cancelled";
   return "";
 }
 
 function getServiceTypeClass(type) {
   if (!type) return "";
-
-  const value = String(type).toLowerCase();
-
-  if (value === "free") return "status-active";
-  if (value === "paid") return "status-info";
-
+  const v = String(type).toLowerCase();
+  if (v === "free") return "status-active";
+  if (v === "paid") return "status-info";
   return "";
 }
 

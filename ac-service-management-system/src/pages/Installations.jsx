@@ -7,6 +7,7 @@ function Installations() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
 
   const [editingInstallation, setEditingInstallation] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -26,7 +27,6 @@ function Installations() {
     try {
       setLoading(true);
       setError("");
-
       const data = await getAllData("installations");
       setInstallations(data);
     } catch (error) {
@@ -36,9 +36,12 @@ function Installations() {
     }
   }
 
+  function toggleExpand(installationId) {
+    setExpandedId((prev) => (prev === installationId ? null : installationId));
+  }
+
   function openEditModal(installation) {
     setEditingInstallation(installation);
-
     setEditFormData({
       Installation_Date: formatDateForInput(installation.Installation_Date),
       Installation_Type: installation.Installation_Type || "In-house",
@@ -51,7 +54,6 @@ function Installations() {
 
   function closeEditModal() {
     setEditingInstallation(null);
-
     setEditFormData({
       Installation_Date: "",
       Installation_Type: "In-house",
@@ -64,30 +66,17 @@ function Installations() {
 
   function handleEditChange(event) {
     const { name, value } = event.target;
-
-    setEditFormData((previousData) => ({
-      ...previousData,
-      [name]: value,
-    }));
+    setEditFormData((prev) => ({ ...prev, [name]: value }));
   }
 
   async function handleUpdateInstallation(event) {
     event.preventDefault();
-
     if (!editingInstallation) return;
-
     try {
       setSaving(true);
       setError("");
       setSuccessMessage("");
-
-      await updateRecord(
-        "installations",
-        "Installation_ID",
-        editingInstallation.Installation_ID,
-        editFormData
-      );
-
+      await updateRecord("installations", "Installation_ID", editingInstallation.Installation_ID, editFormData);
       setSuccessMessage("Installation updated successfully.");
       closeEditModal();
       await loadInstallations();
@@ -105,70 +94,92 @@ function Installations() {
     <div>
       <div className="page-header">
         <h2>Installations</h2>
-        <p>Manage AC installation records.</p>
+        <p>Manage AC installation records. Click a record to expand details.</p>
       </div>
 
       {successMessage && <p className="success-text">{successMessage}</p>}
 
-      <div className="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>Installation ID</th>
-              <th>Customer ID</th>
-              <th>AC ID</th>
-              <th>Installation Date</th>
-              <th>Installation Type</th>
-              <th>Technician Name</th>
-              <th>Outsource Payment</th>
-              <th>Status</th>
-              <th>Notes</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+      <div className="record-list">
+        {installations.length === 0 && <p className="empty-list">No installation records found.</p>}
 
-          <tbody>
-            {installations.map((installation, index) => (
-              <tr key={installation.Installation_ID || index}>
-                <td>{installation.Installation_ID || "-"}</td>
-                <td>{installation.Customer_ID || "-"}</td>
-                <td>{installation.AC_ID || "-"}</td>
-                <td>{formatDate(installation.Installation_Date)}</td>
-                <td>
-                  <span
-                    className={`status-badge ${getInstallationTypeClass(
-                      installation.Installation_Type
-                    )}`}
-                  >
-                    {installation.Installation_Type || "-"}
-                  </span>
-                </td>
-                <td>{installation.Technician_Name || "-"}</td>
-                <td>{formatPrice(installation.Outsource_Payment)}</td>
-                <td>
-                  <span
-                    className={`status-badge ${getInstallationStatusClass(
-                      installation.Installation_Status
-                    )}`}
-                  >
-                    {installation.Installation_Status || "-"}
-                  </span>
-                </td>
-                <td>{installation.Notes || "-"}</td>
-                <td>
-                  <button
-                    className="edit-btn"
-                    onClick={() => openEditModal(installation)}
-                  >
+        {installations.map((installation, index) => {
+          const id = installation.Installation_ID || index;
+          const isExpanded = expandedId === id;
+
+          return (
+            <div key={id} className="record-card">
+              <div className="record-card-main" onClick={() => toggleExpand(id)}>
+                <span className="record-id-badge">{installation.Installation_ID || "—"}</span>
+
+                <div className="record-summary">
+                  <div className="record-primary-row">
+                    <span className="record-customer-id">{installation.Customer_ID || "—"}</span>
+                    <span className="record-separator">·</span>
+                    <span className="record-ac-id">AC: {installation.AC_ID || "—"}</span>
+                    <span className="record-separator">·</span>
+                    <span className="record-date">{formatDate(installation.Installation_Date)}</span>
+                    {installation.Technician_Name && (
+                      <>
+                        <span className="record-separator">·</span>
+                        <span className="record-tech">{installation.Technician_Name}</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="record-badge-row">
+                    <span className={`status-badge ${getInstallationStatusClass(installation.Installation_Status)}`}>
+                      {installation.Installation_Status || "—"}
+                    </span>
+                    <span className={`status-badge ${getInstallationTypeClass(installation.Installation_Type)}`}>
+                      {installation.Installation_Type || "—"}
+                    </span>
+                    {installation.Outsource_Payment && (
+                      <span className="status-badge status-neutral">{formatPrice(installation.Outsource_Payment)}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="record-actions" onClick={(e) => e.stopPropagation()}>
+                  <button className="edit-btn" onClick={() => openEditModal(installation)}>
                     Edit
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
 
-        {installations.length === 0 && <p>No installation records found.</p>}
+                <button className="expand-btn" aria-label="Expand record">
+                  {isExpanded ? "▴" : "▾"}
+                </button>
+              </div>
+
+              {isExpanded && (
+                <div className="record-card-detail">
+                  <div className="detail-grid">
+                    <div className="detail-item">
+                      <label>Installation Date</label>
+                      <span>{formatDate(installation.Installation_Date)}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Installation Type</label>
+                      <span>{installation.Installation_Type || "—"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Technician</label>
+                      <span>{installation.Technician_Name || "—"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Outsource Payment</label>
+                      <span>{formatPrice(installation.Outsource_Payment)}</span>
+                    </div>
+                    {installation.Notes && (
+                      <div className="detail-item detail-full">
+                        <label>Notes</label>
+                        <span>{installation.Notes}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {editingInstallation && (
@@ -176,97 +187,48 @@ function Installations() {
           <div className="modal-card">
             <div className="modal-header">
               <h3>Edit Installation</h3>
-              <button className="close-btn" onClick={closeEditModal}>
-                ×
-              </button>
+              <button className="close-btn" onClick={closeEditModal}>×</button>
             </div>
-
             <p className="modal-subtitle">
-              Installation ID:{" "}
-              <strong>{editingInstallation.Installation_ID}</strong>
+              Installation ID: <strong>{editingInstallation.Installation_ID}</strong>
             </p>
-
             <form onSubmit={handleUpdateInstallation}>
               <div className="form-grid">
                 <div className="form-group">
                   <label>Installation Date</label>
-                  <input
-                    type="date"
-                    name="Installation_Date"
-                    value={editFormData.Installation_Date}
-                    onChange={handleEditChange}
-                  />
+                  <input type="date" name="Installation_Date" value={editFormData.Installation_Date} onChange={handleEditChange} />
                 </div>
-
                 <div className="form-group">
                   <label>Installation Type</label>
-                  <select
-                    name="Installation_Type"
-                    value={editFormData.Installation_Type}
-                    onChange={handleEditChange}
-                  >
+                  <select name="Installation_Type" value={editFormData.Installation_Type} onChange={handleEditChange}>
                     <option value="In-house">In-house</option>
                     <option value="Outsourced">Outsourced</option>
                   </select>
                 </div>
-
                 <div className="form-group">
                   <label>Technician Name</label>
-                  <input
-                    type="text"
-                    name="Technician_Name"
-                    value={editFormData.Technician_Name}
-                    onChange={handleEditChange}
-                  />
+                  <input type="text" name="Technician_Name" value={editFormData.Technician_Name} onChange={handleEditChange} />
                 </div>
-
                 <div className="form-group">
                   <label>Outsource Payment</label>
-                  <input
-                    type="number"
-                    name="Outsource_Payment"
-                    value={editFormData.Outsource_Payment}
-                    onChange={handleEditChange}
-                    min="0"
-                  />
+                  <input type="number" name="Outsource_Payment" value={editFormData.Outsource_Payment} onChange={handleEditChange} min="0" />
                 </div>
-
                 <div className="form-group">
                   <label>Installation Status</label>
-                  <select
-                    name="Installation_Status"
-                    value={editFormData.Installation_Status}
-                    onChange={handleEditChange}
-                  >
+                  <select name="Installation_Status" value={editFormData.Installation_Status} onChange={handleEditChange}>
                     <option value="Pending">Pending</option>
                     <option value="Completed">Completed</option>
                     <option value="Cancelled">Cancelled</option>
                   </select>
                 </div>
-
                 <div className="form-group full-width">
                   <label>Notes</label>
-                  <textarea
-                    name="Notes"
-                    value={editFormData.Notes}
-                    onChange={handleEditChange}
-                    rows="3"
-                  ></textarea>
+                  <textarea name="Notes" value={editFormData.Notes} onChange={handleEditChange} rows="3"></textarea>
                 </div>
               </div>
-
               <div className="form-actions">
-                <button
-                  type="button"
-                  className="cancel-btn"
-                  onClick={closeEditModal}
-                >
-                  Cancel
-                </button>
-
-                <button type="submit" disabled={saving}>
-                  {saving ? "Updating..." : "Update Installation"}
-                </button>
+                <button type="button" className="cancel-btn" onClick={closeEditModal}>Cancel</button>
+                <button type="submit" disabled={saving}>{saving ? "Updating..." : "Update Installation"}</button>
               </div>
             </form>
           </div>
@@ -277,52 +239,40 @@ function Installations() {
 }
 
 function formatDate(value) {
-  if (!value) return "-";
-
+  if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-
   return date.toLocaleDateString("en-GB");
 }
 
 function formatDateForInput(value) {
   if (!value) return "";
-
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-
   return date.toISOString().split("T")[0];
 }
 
 function formatPrice(value) {
-  if (!value) return "-";
-
-  const numberValue = Number(value);
-  if (Number.isNaN(numberValue)) return String(value);
-
-  return `Rs. ${numberValue.toLocaleString("en-LK")}`;
+  if (!value) return "—";
+  const n = Number(value);
+  if (Number.isNaN(n)) return String(value);
+  return `Rs. ${n.toLocaleString("en-LK")}`;
 }
 
 function getInstallationStatusClass(status) {
   if (!status) return "";
-
-  const value = String(status).toLowerCase();
-
-  if (value === "completed") return "status-active";
-  if (value === "pending") return "status-expired";
-  if (value === "cancelled") return "status-cancelled";
-
+  const v = String(status).toLowerCase();
+  if (v === "completed") return "status-active";
+  if (v === "pending") return "status-expired";
+  if (v === "cancelled") return "status-cancelled";
   return "";
 }
 
 function getInstallationTypeClass(type) {
   if (!type) return "";
-
-  const value = String(type).toLowerCase();
-
-  if (value === "in-house") return "status-active";
-  if (value === "outsourced") return "status-expired";
-
+  const v = String(type).toLowerCase();
+  if (v === "in-house") return "status-active";
+  if (v === "outsourced") return "status-expired";
   return "";
 }
 
