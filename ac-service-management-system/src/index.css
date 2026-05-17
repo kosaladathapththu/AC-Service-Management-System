@@ -3156,3 +3156,75 @@ tbody tr:hover td {
     justify-content: flex-start;
   }
 }
+
+/* Add Sale customer mode panel - separate CSS */
+.sale-mode-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.sale-mode-card h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #111827;
+}
+
+.sale-mode-card p {
+  margin: 5px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.sale-mode-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sale-mode-btn {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+  border-radius: 999px;
+  padding: 9px 15px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sale-mode-btn:hover {
+  background: #f3f4f6;
+}
+
+.sale-mode-btn.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.selected-customer-box {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.selected-customer-box p {
+  margin: 4px 0;
+  color: #374151;
+  font-size: 14px;
+}
+
+@media (max-width: 800px) {
+  .sale-mode-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
