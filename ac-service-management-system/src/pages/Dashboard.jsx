@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import StatCard from "../components/StatCard";
 import { getDashboardData } from "../api/googleSheetApi";
 
 function Dashboard() {
@@ -34,54 +33,70 @@ function Dashboard() {
     return <p className="error-text">Error: {error}</p>;
   }
 
- return (
-  <div className="dashboard-page">
+  return (
+    <div className="dashboard-page">
       <div className="page-header">
         <h2>Dashboard</h2>
-        <p>Service reminders, payment reminders, complaints, and warranty overview.</p>
+        <p>
+          Main action center for services, payments, complaints, and warranties.
+        </p>
       </div>
 
-      <div className="stats-grid">
-        <StatCard
+      <div className="dashboard-action-grid">
+        <DashboardActionCard
           title="Total Customers"
           value={dashboardData.totalCustomers}
-          note="Registered customers"
+          note="All registered customers"
+          link="/customers"
+          type="neutral"
         />
 
-        <StatCard
+        <DashboardActionCard
           title="Services Due This Month"
           value={dashboardData.servicesDueThisMonth}
-          note="Current month pending services"
+          note="Pending services this month"
+          link="/services?filter=due-this-month"
+          type="info"
         />
 
-        <StatCard
+        <DashboardActionCard
           title="Overdue Services"
           value={dashboardData.overdueServices}
-          note="Previous months not completed"
+          note="Previous services not completed"
+          link="/services?filter=overdue"
+          type="danger"
         />
 
-        <StatCard
+        <DashboardActionCard
           title="Pending Payments"
           value={dashboardData.pendingPayments}
-          note="Waiting for payment"
+          note="Customers waiting to pay"
+          link="/payments?filter=pending"
+          type="warning"
         />
 
-        <StatCard
+        <DashboardActionCard
           title="Overdue Payments"
           value={dashboardData.overduePayments}
-          note="Due date passed"
+          note="Payment due date passed"
+          link="/payments?filter=overdue"
+          type="danger"
         />
 
-        <StatCard
+        <DashboardActionCard
           title="Active Warranties"
           value={dashboardData.activeWarranties}
-          note="Currently valid"
+          note="Currently valid warranties"
+          link="/ac-units?filter=active-warranty"
+          type="success"
         />
 
-        <StatCard
+        <DashboardActionCard
           title="Open Complaints"
           value={dashboardData.openComplaints}
-          note="Need support team"
+          note="Complaints needing action"
+          link="/complaints?filter=open"
+          type="danger"
         />
       </div>
 
@@ -120,6 +135,20 @@ function Dashboard() {
         data={dashboardData.openComplaintsList}
       />
     </div>
+  );
+}
+
+function DashboardActionCard({ title, value, note, link, type }) {
+  return (
+    <Link to={link} className={`dashboard-action-card dashboard-action-${type}`}>
+      <div>
+        <p className="dashboard-action-title">{title}</p>
+        <h3>{value}</h3>
+        <span>{note}</span>
+      </div>
+
+      <div className="dashboard-action-arrow">View</div>
+    </Link>
   );
 }
 
@@ -187,18 +216,27 @@ function ReminderSection({ title, description, type, data = [] }) {
                 return (
                   <tr key={item.Service_ID || index}>
                     <td>{item.Service_ID || "-"}</td>
-                    <td>{item.Customer_ID} - {item.Customer_Name}</td>
+                    <td>
+                      {item.Customer_ID} - {item.Customer_Name}
+                    </td>
                     <td>{item.AC_ID || "-"}</td>
                     <td>{formatDate(item.Service_Date)}</td>
                     <td>{item.Service_Type || "-"}</td>
                     <td>
-                      <span className={`status-badge ${getServiceStatusClass(item.Service_Status)}`}>
+                      <span
+                        className={`status-badge ${getServiceStatusClass(
+                          item.Service_Status
+                        )}`}
+                      >
                         {item.Service_Status || "-"}
                       </span>
                     </td>
                     <td>{item.Technician_Name || "-"}</td>
                     <td>
-                      <Link className="view-link" to={`/customers/${item.Customer_ID}`}>
+                      <Link
+                        className="view-link"
+                        to={`/customers/${item.Customer_ID}`}
+                      >
                         View
                       </Link>
                     </td>
@@ -210,19 +248,28 @@ function ReminderSection({ title, description, type, data = [] }) {
                 return (
                   <tr key={item.Payment_ID || index}>
                     <td>{item.Payment_ID || "-"}</td>
-                    <td>{item.Customer_ID} - {item.Customer_Name}</td>
+                    <td>
+                      {item.Customer_ID} - {item.Customer_Name}
+                    </td>
                     <td>{item.AC_ID || "-"}</td>
                     <td>{item.Payment_Year || "-"}</td>
                     <td>{formatPrice(item.Amount)}</td>
                     <td>{item.Payment_Type || "-"}</td>
                     <td>
-                      <span className={`status-badge ${getPaymentStatusClass(item.Payment_Status)}`}>
+                      <span
+                        className={`status-badge ${getPaymentStatusClass(
+                          item.Payment_Status
+                        )}`}
+                      >
                         {item.Payment_Status || "-"}
                       </span>
                     </td>
                     <td>{formatDate(item.Due_Date)}</td>
                     <td>
-                      <Link className="view-link" to={`/customers/${item.Customer_ID}`}>
+                      <Link
+                        className="view-link"
+                        to={`/customers/${item.Customer_ID}`}
+                      >
                         View
                       </Link>
                     </td>
@@ -233,18 +280,27 @@ function ReminderSection({ title, description, type, data = [] }) {
               return (
                 <tr key={item.Complaint_ID || index}>
                   <td>{item.Complaint_ID || "-"}</td>
-                  <td>{item.Customer_ID} - {item.Customer_Name}</td>
+                  <td>
+                    {item.Customer_ID} - {item.Customer_Name}
+                  </td>
                   <td>{item.AC_ID || "-"}</td>
                   <td>{formatDate(item.Complaint_Date)}</td>
                   <td>{item.Issue_Description || "-"}</td>
                   <td>
-                    <span className={`status-badge ${getComplaintStatusClass(item.Complaint_Status)}`}>
+                    <span
+                      className={`status-badge ${getComplaintStatusClass(
+                        item.Complaint_Status
+                      )}`}
+                    >
                       {item.Complaint_Status || "-"}
                     </span>
                   </td>
                   <td>{item.Technician_Name || "-"}</td>
                   <td>
-                    <Link className="view-link" to={`/customers/${item.Customer_ID}`}>
+                    <Link
+                      className="view-link"
+                      to={`/customers/${item.Customer_ID}`}
+                    >
                       View
                     </Link>
                   </td>
