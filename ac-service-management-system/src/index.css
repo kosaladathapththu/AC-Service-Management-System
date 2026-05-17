@@ -2371,3 +2371,87 @@ tbody tr:hover td {
 .payments-page .table-card {
   overflow-x: unset;
 }
+
+/* ============================================
+   CUSTOMER PROFILE — section card wrapper
+   Append to bottom of index-additions.css
+   ============================================ */
+
+.profile-section-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 16px;
+}
+
+.profile-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid #F3F4F6;
+  background: #FAFBFC;
+}
+
+.profile-section-header h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.profile-section-count {
+  background: #2563EB;
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 26px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-section-empty {
+  padding: 18px 18px;
+  font-size: 13px;
+  color: #6B7280;
+}
+
+.profile-section-card .record-list {
+  padding: 10px;
+  gap: 6px;
+}
+
+/* Cards inside profile sections have no hover shadow (read-only) */
+.profile-section-card .record-card:hover {
+  box-shadow: none;
+}
+
+/* ============================================
+   CUSTOMERS PAGE — Profile button
+   ============================================ */
+
+.profile-btn {
+  display: inline-flex;
+  align-items: center;
+  background: #F3F4F6;
+  color: #374151;
+  border: 1px solid #D1D5DB;
+  padding: 6px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.profile-btn:hover {
+  background: #E5E7EB;
+  border-color: #9CA3AF;
+  color: #111827;
+}

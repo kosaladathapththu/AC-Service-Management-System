@@ -8,6 +8,7 @@ function Customers() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
 
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -28,7 +29,6 @@ function Customers() {
     try {
       setLoading(true);
       setError("");
-
       const data = await getAllData("customers");
       setCustomers(data);
     } catch (error) {
@@ -38,16 +38,18 @@ function Customers() {
     }
   }
 
+  function toggleExpand(customerId) {
+    setExpandedId((prev) => (prev === customerId ? null : customerId));
+  }
+
   function openEditModal(customer) {
     setEditingCustomer(customer);
-
     setEditFormData({
       Customer_Name: customer.Customer_Name || "",
       Phone: customer.Phone || "",
       Email: customer.Email || "",
       Address: customer.Address || "",
-      Google_Map_Link:
-        customer.Google_Map_Link || customer.Google_Map_Li || "",
+      Google_Map_Link: customer.Google_Map_Link || customer.Google_Map_Li || "",
       Created_Date: formatDateForInput(customer.Created_Date),
       Notes: customer.Notes || "",
     });
@@ -55,7 +57,6 @@ function Customers() {
 
   function closeEditModal() {
     setEditingCustomer(null);
-
     setEditFormData({
       Customer_Name: "",
       Phone: "",
@@ -69,32 +70,22 @@ function Customers() {
 
   function handleEditChange(event) {
     const { name, value } = event.target;
-
-    setEditFormData((previousData) => ({
-      ...previousData,
-      [name]: value,
-    }));
+    setEditFormData((prev) => ({ ...prev, [name]: value }));
   }
 
   async function handleUpdateCustomer(event) {
     event.preventDefault();
-
     if (!editingCustomer) return;
 
     const customerId = getValue(editingCustomer, [
-      "Customer_ID",
-      "customer_ID",
-      "Customer ID",
-      "id",
+      "Customer_ID", "customer_ID", "Customer ID", "id",
     ]);
 
     try {
       setSaving(true);
       setError("");
       setSuccessMessage("");
-
       await updateRecord("customers", "Customer_ID", customerId, editFormData);
-
       setSuccessMessage("Customer updated successfully.");
       closeEditModal();
       await loadCustomers();
@@ -111,7 +102,6 @@ function Customers() {
         return row[key];
       }
     }
-
     return "-";
   }
 
@@ -122,112 +112,112 @@ function Customers() {
     <div>
       <div className="page-header">
         <h2>Customers</h2>
-        <p>Manage all customer records.</p>
+        <p>Manage all customer records. Click a record to expand details.</p>
       </div>
 
       {successMessage && <p className="success-text">{successMessage}</p>}
 
-      <div className="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>Customer ID</th>
-              <th>Name</th>
-              <th>Phone</th>
-              <th>Email</th>
-              <th>Address</th>
-              <th>Google Map</th>
-              <th>Created Date</th>
-              <th>Notes</th>
-              <th>Profile</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
+      <div className="record-list">
+        {customers.length === 0 && <p className="empty-list">No customers found.</p>}
 
-          <tbody>
-            {customers.map((customer, index) => {
-              const customerId = getValue(customer, [
-                "Customer_ID",
-                "customer_ID",
-                "Customer ID",
-                "id",
-              ]);
+        {customers.map((customer, index) => {
+          const customerId = getValue(customer, ["Customer_ID", "customer_ID", "Customer ID", "id"]);
+          const customerName = getValue(customer, ["Customer_Name", "Customer Name", "name"]);
+          const phone = getValue(customer, ["Phone", "phone"]);
+          const email = getValue(customer, ["Email", "email"]);
+          const address = getValue(customer, ["Address", "address"]);
+          const googleMapLink = getValue(customer, ["Google_Map_Link", "Google_Map_Li", "Google Map Link", "googleMapLink"]);
+          const createdDate = getValue(customer, ["Created_Date", "Created Date", "createdDate"]);
+          const notes = getValue(customer, ["Notes", "notes"]);
 
-              const customerName = getValue(customer, [
-                "Customer_Name",
-                "Customer Name",
-                "name",
-              ]);
+          const id = customerId !== "-" ? customerId : index;
+          const isExpanded = expandedId === id;
 
-              const phone = getValue(customer, ["Phone", "phone"]);
-              const email = getValue(customer, ["Email", "email"]);
-              const address = getValue(customer, ["Address", "address"]);
+          return (
+            <div key={id} className="record-card">
+              <div className="record-card-main" onClick={() => toggleExpand(id)}>
+                <span className="record-id-badge">{customerId !== "-" ? customerId : "—"}</span>
 
-              const googleMapLink = getValue(customer, [
-                "Google_Map_Link",
-                "Google_Map_Li",
-                "Google Map Link",
-                "googleMapLink",
-              ]);
-
-              const createdDate = getValue(customer, [
-                "Created_Date",
-                "Created Date",
-                "createdDate",
-              ]);
-
-              const notes = getValue(customer, ["Notes", "notes"]);
-
-              return (
-                <tr key={customerId !== "-" ? customerId : index}>
-                  <td>{customerId}</td>
-                  <td>{customerName}</td>
-                  <td>{phone}</td>
-                  <td>{email}</td>
-                  <td>{address}</td>
-                  <td>
-                    {googleMapLink !== "-" ? (
-                      <a
-                        href={googleMapLink}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="view-link"
-                      >
-                        Open
-                      </a>
-                    ) : (
-                      "-"
+                <div className="record-summary">
+                  <div className="record-primary-row">
+                    <span className="record-customer-id">{customerName}</span>
+                    {phone !== "-" && (
+                      <>
+                        <span className="record-separator">·</span>
+                        <span className="record-ac-id">{phone}</span>
+                      </>
                     )}
-                  </td>
-                  <td>{formatDate(createdDate)}</td>
-                  <td>{notes}</td>
-                  <td>
-                    {customerId !== "-" ? (
-                      <Link
-                        className="view-link"
-                        to={`/customers/${customerId}`}
-                      >
-                        View
-                      </Link>
-                    ) : (
-                      "-"
+                    {email !== "-" && (
+                      <>
+                        <span className="record-separator">·</span>
+                        <span className="record-ac-id">{email}</span>
+                      </>
                     )}
-                  </td>
-                  <td>
-                    <button
-                      className="edit-btn"
-                      onClick={() => openEditModal(customer)}
-                    >
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </div>
+                  {address !== "-" && (
+                    <div className="record-badge-row">
+                      <span className="record-issue-preview">{address}</span>
+                    </div>
+                  )}
+                </div>
 
-        {customers.length === 0 && <p>No customers found.</p>}
+                <div className="record-actions" onClick={(e) => e.stopPropagation()}>
+                  {customerId !== "-" && (
+                    <Link className="profile-btn" to={`/customers/${customerId}`}>
+                      Profile
+                    </Link>
+                  )}
+                  <button className="edit-btn" onClick={() => openEditModal(customer)}>
+                    Edit
+                  </button>
+                </div>
+
+                <button className="expand-btn" aria-label="Expand record">
+                  {isExpanded ? "▴" : "▾"}
+                </button>
+              </div>
+
+              {isExpanded && (
+                <div className="record-card-detail">
+                  <div className="detail-grid">
+                    <div className="detail-item">
+                      <label>Phone</label>
+                      <span>{phone !== "-" ? phone : "—"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Email</label>
+                      <span>{email !== "-" ? email : "—"}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Created Date</label>
+                      <span>{formatDate(createdDate)}</span>
+                    </div>
+                    <div className="detail-item detail-full">
+                      <label>Address</label>
+                      <span>{address !== "-" ? address : "—"}</span>
+                    </div>
+                    {googleMapLink !== "-" && (
+                      <div className="detail-item">
+                        <label>Google Map</label>
+                        <span>
+                          <a href={googleMapLink} target="_blank" rel="noreferrer" className="view-link">
+                            Open Map
+                          </a>
+                        </span>
+                      </div>
+                    )}
+                    {notes !== "-" && (
+                      <div className="detail-item detail-full">
+                        <label>Notes</label>
+                        <span>{notes}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {editingCustomer && (
@@ -235,110 +225,48 @@ function Customers() {
           <div className="modal-card">
             <div className="modal-header">
               <h3>Edit Customer</h3>
-              <button className="close-btn" onClick={closeEditModal}>
-                ×
-              </button>
+              <button className="close-btn" onClick={closeEditModal}>×</button>
             </div>
-
             <p className="modal-subtitle">
               Customer ID:{" "}
               <strong>
-                {getValue(editingCustomer, [
-                  "Customer_ID",
-                  "customer_ID",
-                  "Customer ID",
-                  "id",
-                ])}
+                {getValue(editingCustomer, ["Customer_ID", "customer_ID", "Customer ID", "id"])}
               </strong>
             </p>
-
             <form onSubmit={handleUpdateCustomer}>
               <div className="form-grid">
                 <div className="form-group">
                   <label>Customer Name</label>
-                  <input
-                    type="text"
-                    name="Customer_Name"
-                    value={editFormData.Customer_Name}
-                    onChange={handleEditChange}
-                    required
-                  />
+                  <input type="text" name="Customer_Name" value={editFormData.Customer_Name} onChange={handleEditChange} required />
                 </div>
-
                 <div className="form-group">
                   <label>Phone</label>
-                  <input
-                    type="text"
-                    name="Phone"
-                    value={editFormData.Phone}
-                    onChange={handleEditChange}
-                  />
+                  <input type="text" name="Phone" value={editFormData.Phone} onChange={handleEditChange} />
                 </div>
-
                 <div className="form-group">
                   <label>Email</label>
-                  <input
-                    type="email"
-                    name="Email"
-                    value={editFormData.Email}
-                    onChange={handleEditChange}
-                  />
+                  <input type="email" name="Email" value={editFormData.Email} onChange={handleEditChange} />
                 </div>
-
                 <div className="form-group">
                   <label>Created Date</label>
-                  <input
-                    type="date"
-                    name="Created_Date"
-                    value={editFormData.Created_Date}
-                    onChange={handleEditChange}
-                  />
+                  <input type="date" name="Created_Date" value={editFormData.Created_Date} onChange={handleEditChange} />
                 </div>
-
                 <div className="form-group full-width">
                   <label>Address</label>
-                  <textarea
-                    name="Address"
-                    value={editFormData.Address}
-                    onChange={handleEditChange}
-                    rows="3"
-                  ></textarea>
+                  <textarea name="Address" value={editFormData.Address} onChange={handleEditChange} rows="3"></textarea>
                 </div>
-
                 <div className="form-group full-width">
                   <label>Google Map Link</label>
-                  <input
-                    type="text"
-                    name="Google_Map_Link"
-                    value={editFormData.Google_Map_Link}
-                    onChange={handleEditChange}
-                    placeholder="Paste Google Map link here"
-                  />
+                  <input type="text" name="Google_Map_Link" value={editFormData.Google_Map_Link} onChange={handleEditChange} placeholder="Paste Google Map link here" />
                 </div>
-
                 <div className="form-group full-width">
                   <label>Notes</label>
-                  <textarea
-                    name="Notes"
-                    value={editFormData.Notes}
-                    onChange={handleEditChange}
-                    rows="3"
-                  ></textarea>
+                  <textarea name="Notes" value={editFormData.Notes} onChange={handleEditChange} rows="3"></textarea>
                 </div>
               </div>
-
               <div className="form-actions">
-                <button
-                  type="button"
-                  className="cancel-btn"
-                  onClick={closeEditModal}
-                >
-                  Cancel
-                </button>
-
-                <button type="submit" disabled={saving}>
-                  {saving ? "Updating..." : "Update Customer"}
-                </button>
+                <button type="button" className="cancel-btn" onClick={closeEditModal}>Cancel</button>
+                <button type="submit" disabled={saving}>{saving ? "Updating..." : "Update Customer"}</button>
               </div>
             </form>
           </div>
@@ -349,20 +277,16 @@ function Customers() {
 }
 
 function formatDate(value) {
-  if (!value || value === "-") return "-";
-
+  if (!value || value === "-") return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-
   return date.toLocaleDateString("en-GB");
 }
 
 function formatDateForInput(value) {
   if (!value || value === "-") return "";
-
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-
   return date.toISOString().split("T")[0];
 }
 
