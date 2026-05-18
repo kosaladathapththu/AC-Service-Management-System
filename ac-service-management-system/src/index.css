@@ -3228,3 +3228,31 @@ tbody tr:hover td {
     flex-direction: column;
   }
 }
+
+/* Installation free service preview - separate CSS */
+.free-service-preview-card {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-left: 5px solid #2563eb;
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+}
+
+.free-service-preview-card h3 {
+  margin: 0 0 8px;
+  color: #1e3a8a;
+  font-size: 17px;
+}
+
+.free-service-preview-card p {
+  margin: 0;
+  color: #1e40af;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.free-service-preview-note {
+  margin-top: 6px !important;
+  font-weight: 700;
+}
