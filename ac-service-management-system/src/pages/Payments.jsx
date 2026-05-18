@@ -26,6 +26,7 @@ function Payments() {
     Payment_Type: "Annual Service",
     Payment_Status: "Pending",
     Due_Date: "",
+    Annual_Service_Count: "3",
     Notes: "",
   });
 
@@ -61,26 +62,17 @@ function Payments() {
   const filteredPayments = payments.filter((payment) => {
     const status = String(payment.Payment_Status || "").toLowerCase();
 
-    if (activeFilter === "pending") {
-      return status === "pending";
-    }
-
-    if (activeFilter === "paid") {
-      return status === "paid";
-    }
-
+    if (activeFilter === "pending") return status === "pending";
+    if (activeFilter === "paid") return status === "paid";
     if (activeFilter === "overdue") {
       return status === "pending" && isPastDate(payment.Due_Date);
     }
-
     if (activeFilter === "annual-service") {
       return String(payment.Payment_Type || "").toLowerCase() === "annual service";
     }
-
     if (activeFilter === "repair") {
       return String(payment.Payment_Type || "").toLowerCase() === "repair";
     }
-
     if (activeFilter === "installation") {
       return String(payment.Payment_Type || "").toLowerCase() === "installation";
     }
@@ -102,6 +94,7 @@ function Payments() {
       Payment_Type: payment.Payment_Type || "Annual Service",
       Payment_Status: payment.Payment_Status || "Pending",
       Due_Date: formatDateForInput(payment.Due_Date),
+      Annual_Service_Count: payment.Annual_Service_Count || "3",
       Notes: payment.Notes || "",
     });
   }
@@ -116,6 +109,7 @@ function Payments() {
       Payment_Type: "Annual Service",
       Payment_Status: "Pending",
       Due_Date: "",
+      Annual_Service_Count: "3",
       Notes: "",
     });
   }
@@ -132,7 +126,16 @@ function Payments() {
             ? new Date().toISOString().split("T")[0]
             : prev.Payment_Date,
       }));
+      return;
+    }
 
+    if (name === "Payment_Type") {
+      setEditFormData((prev) => ({
+        ...prev,
+        Payment_Type: value,
+        Annual_Service_Count:
+          value === "Annual Service" ? prev.Annual_Service_Count || "3" : "",
+      }));
       return;
     }
 
@@ -325,6 +328,20 @@ function Payments() {
                       </span>
                     )}
 
+                    {payment.Annual_Service_Count &&
+                      String(payment.Payment_Type || "").toLowerCase() ===
+                        "annual service" && (
+                        <span className="status-badge status-neutral">
+                          {payment.Annual_Service_Count} Services
+                        </span>
+                      )}
+
+                    {payment.Service_Generated === "Yes" && (
+                      <span className="status-badge status-active">
+                        Services Generated
+                      </span>
+                    )}
+
                     {isPastDate(payment.Due_Date) &&
                       String(payment.Payment_Status || "").toLowerCase() === "pending" && (
                         <span className="status-badge status-expired">
@@ -380,6 +397,24 @@ function Payments() {
                     <div className="detail-item">
                       <label>Payment Year</label>
                       <span>{payment.Payment_Year || "—"}</span>
+                    </div>
+
+                    <div className="detail-item">
+                      <label>Annual Service Count</label>
+                      <span>{payment.Annual_Service_Count || "—"}</span>
+                    </div>
+
+                    <div className="detail-item">
+                      <label>Service Generated</label>
+                      <span
+                        className={`status-badge ${
+                          payment.Service_Generated === "Yes"
+                            ? "status-active"
+                            : "status-expired"
+                        }`}
+                      >
+                        {payment.Service_Generated || "No"}
+                      </span>
                     </div>
 
                     <div className="detail-item">
@@ -502,6 +537,25 @@ function Payments() {
                   />
                 </div>
 
+                {editFormData.Payment_Type === "Annual Service" && (
+                  <div className="form-group">
+                    <label>Annual Service Count</label>
+                    <select
+                      name="Annual_Service_Count"
+                      value={editFormData.Annual_Service_Count}
+                      onChange={handleEditChange}
+                    >
+                      <option value="1">1 Service</option>
+                      <option value="2">2 Services</option>
+                      <option value="3">3 Services</option>
+                      <option value="4">4 Services</option>
+                    </select>
+                    <span className="form-hint">
+                      Services generate when status is Paid.
+                    </span>
+                  </div>
+                )}
+
                 <div className="form-group full-width">
                   <label>Notes</label>
                   <textarea
@@ -512,6 +566,22 @@ function Payments() {
                   ></textarea>
                 </div>
               </div>
+
+              {editFormData.Payment_Type === "Annual Service" &&
+                editFormData.Payment_Status === "Paid" && (
+                  <div className="annual-service-preview-card">
+                    <h3>Annual Service Schedule Preview</h3>
+                    <p>
+                      Updating this annual payment as Paid will generate{" "}
+                      <strong>{editFormData.Annual_Service_Count}</strong>{" "}
+                      service(s), if not already generated.
+                    </p>
+                    <p className="annual-service-preview-note">
+                      Schedule pattern:{" "}
+                      {getServicePreviewText(editFormData.Annual_Service_Count)}
+                    </p>
+                  </div>
+                )}
 
               <div className="form-actions">
                 <button type="button" className="cancel-btn" onClick={closeEditModal}>
@@ -538,6 +608,15 @@ function getFilterTitle(filter) {
   if (filter === "repair") return "Repair Payments";
   if (filter === "installation") return "Installation Payments";
   return "All Payments";
+}
+
+function getServicePreviewText(count) {
+  if (String(count) === "1") return "+12 months";
+  if (String(count) === "2") return "+6 months, +12 months";
+  if (String(count) === "3") return "+4 months, +8 months, +12 months";
+  if (String(count) === "4") return "+3 months, +6 months, +9 months, +12 months";
+
+  return "+4 months, +8 months, +12 months";
 }
 
 function isPastDate(value) {

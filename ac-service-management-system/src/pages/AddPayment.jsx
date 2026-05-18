@@ -4,11 +4,7 @@ import { addPayment, getAllData } from "../api/googleSheetApi";
 function AddPayment() {
   const today = new Date().toISOString().split("T")[0];
 
-  const [customers, setCustomers] = useState([]);
-  const [acUnits, setAcUnits] = useState([]);
-  const [filteredACUnits, setFilteredACUnits] = useState([]);
-
-  const [formData, setFormData] = useState({
+  const emptyForm = {
     Customer_ID: "",
     AC_ID: "",
     Payment_Year: "Year 2",
@@ -17,8 +13,15 @@ function AddPayment() {
     Payment_Type: "Annual Service",
     Payment_Status: "Paid",
     Due_Date: today,
+    Annual_Service_Count: "3",
     Notes: "",
-  });
+  };
+
+  const [customers, setCustomers] = useState([]);
+  const [acUnits, setAcUnits] = useState([]);
+  const [filteredACUnits, setFilteredACUnits] = useState([]);
+
+  const [formData, setFormData] = useState(emptyForm);
 
   const [loadingData, setLoadingData] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -75,6 +78,17 @@ function AddPayment() {
       return;
     }
 
+    if (name === "Payment_Type") {
+      setFormData((previousData) => ({
+        ...previousData,
+        Payment_Type: value,
+        Annual_Service_Count:
+          value === "Annual Service" ? previousData.Annual_Service_Count || "3" : "",
+      }));
+
+      return;
+    }
+
     setFormData((previousData) => ({
       ...previousData,
       [name]: value,
@@ -91,22 +105,17 @@ function AddPayment() {
 
       const result = await addPayment(formData);
 
+      const annualMessage =
+        formData.Payment_Type === "Annual Service" &&
+        formData.Payment_Status === "Paid"
+          ? ` ${formData.Annual_Service_Count} annual service(s) will be generated.`
+          : "";
+
       setSuccessMessage(
-        `Payment added successfully. Payment ID: ${result.paymentId}`
+        `Payment added successfully. Payment ID: ${result.paymentId}.${annualMessage}`
       );
 
-      setFormData({
-        Customer_ID: "",
-        AC_ID: "",
-        Payment_Year: "Year 2",
-        Payment_Date: today,
-        Amount: "",
-        Payment_Type: "Annual Service",
-        Payment_Status: "Paid",
-        Due_Date: today,
-        Notes: "",
-      });
-
+      setFormData(emptyForm);
       setFilteredACUnits([]);
     } catch (error) {
       setError(error.message);
@@ -126,8 +135,9 @@ function AddPayment() {
   if (loadingData) {
     return <p>Loading form data...</p>;
   }
-return (
-  <div className="page-content add-payment-page">
+
+  return (
+    <div className="page-content add-payment-page">
       <div className="page-header">
         <h2>Add Payment</h2>
         <p>Add annual service, repair, or installation payment details.</p>
@@ -267,6 +277,25 @@ return (
               />
             </div>
 
+            {formData.Payment_Type === "Annual Service" && (
+              <div className="form-group">
+                <label>Annual Service Count</label>
+                <select
+                  name="Annual_Service_Count"
+                  value={formData.Annual_Service_Count}
+                  onChange={handleChange}
+                >
+                  <option value="1">1 Service</option>
+                  <option value="2">2 Services</option>
+                  <option value="3">3 Services</option>
+                  <option value="4">4 Services</option>
+                </select>
+                <span className="form-hint">
+                  Services generate only when annual payment is Paid.
+                </span>
+              </div>
+            )}
+
             <div className="form-group full-width">
               <label>Notes</label>
               <textarea
@@ -280,6 +309,22 @@ return (
           </div>
         </div>
 
+        {formData.Payment_Type === "Annual Service" &&
+          formData.Payment_Status === "Paid" && (
+            <div className="annual-service-preview-card">
+              <h3>Annual Service Schedule Preview</h3>
+              <p>
+                When this payment is saved, the system will auto-create{" "}
+                <strong>{formData.Annual_Service_Count}</strong> paid annual
+                service(s) for <strong>{formData.Payment_Year}</strong>.
+              </p>
+              <p className="annual-service-preview-note">
+                Schedule pattern:{" "}
+                {getServicePreviewText(formData.Annual_Service_Count)}
+              </p>
+            </div>
+          )}
+
         <div className="form-actions">
           <button type="submit" disabled={saving}>
             {saving ? "Saving..." : "Save Payment"}
@@ -288,6 +333,15 @@ return (
       </form>
     </div>
   );
+}
+
+function getServicePreviewText(count) {
+  if (String(count) === "1") return "+12 months";
+  if (String(count) === "2") return "+6 months, +12 months";
+  if (String(count) === "3") return "+4 months, +8 months, +12 months";
+  if (String(count) === "4") return "+3 months, +6 months, +9 months, +12 months";
+
+  return "+4 months, +8 months, +12 months";
 }
 
 export default AddPayment;
