@@ -21,6 +21,7 @@ function Payments() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sendingReminderId, setSendingReminderId] = useState("");
+  const [markingPaidId, setMarkingPaidId] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedId, setExpandedId] = useState(null);
@@ -200,6 +201,28 @@ function Payments() {
     }
   }
 
+  async function handleMarkPaid(payment, event) {
+    event.stopPropagation();
+
+    try {
+      setMarkingPaidId(payment.Payment_ID);
+      setError("");
+      setSuccessMessage("");
+
+      await updateRecord("payments", "Payment_ID", payment.Payment_ID, {
+        Payment_Status: "Paid",
+        Payment_Date: new Date().toISOString().split("T")[0],
+      });
+
+      setSuccessMessage("Payment marked as paid successfully.");
+      await loadPayments();
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setMarkingPaidId("");
+    }
+  }
+
   if (loading) return <p>Loading payments...</p>;
 
   return (
@@ -372,6 +395,16 @@ function Payments() {
                 </div>
 
                 <div className="record-actions" onClick={(event) => event.stopPropagation()}>
+                  {String(payment.Payment_Status || "").toLowerCase() === "pending" && (
+                    <button
+                      className="mark-paid-btn"
+                      onClick={(event) => handleMarkPaid(payment, event)}
+                      disabled={markingPaidId === payment.Payment_ID}
+                    >
+                      {markingPaidId === payment.Payment_ID ? "Updating..." : "Mark Paid"}
+                    </button>
+                  )}
+
                   <button
                     className="reminder-btn"
                     onClick={(event) => handleSendReminder(payment, event)}

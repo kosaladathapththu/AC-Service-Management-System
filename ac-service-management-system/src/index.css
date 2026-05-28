@@ -2499,6 +2499,27 @@ tbody tr:hover td {
   cursor: not-allowed;
 }
 
+.record-actions .mark-paid-btn {
+  background: #2563EB;
+  color: #FFFFFF;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.record-actions .mark-paid-btn:hover {
+  background: #1D4ED8;
+}
+
+.record-actions .mark-paid-btn:disabled {
+  background: #9CA3AF;
+  cursor: not-allowed;
+}
+
 .record-actions .edit-btn {
   padding: 6px 12px;
   font-size: 12px;
@@ -3182,6 +3203,39 @@ tbody tr:hover td {
 .service-filter-btn.active.danger {
   background: #dc2626;
   border-color: #dc2626;
+}
+
+.service-status-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.service-status-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.service-status-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px;
+}
+
+.service-status-section-header h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.service-status-section-header p {
+  margin: 3px 0 0;
+  color: #6b7280;
+  font-size: 12px;
 }
 
 @media (max-width: 800px) {

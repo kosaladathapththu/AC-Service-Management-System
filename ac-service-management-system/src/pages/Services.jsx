@@ -114,6 +114,7 @@ function Services() {
 
     return true;
   });
+  const serviceStatusSections = getServiceStatusSections(filteredServices);
 
   function toggleExpand(serviceId) {
     setExpandedId((prev) => (prev === serviceId ? null : serviceId));
@@ -325,7 +326,7 @@ function Services() {
         </div>
       </div>
 
-      <div className="record-list">
+      <div className="service-status-groups">
         {filteredServices.length === 0 && (
           <div className="empty-list-card">
             <p>No service records found for this filter.</p>
@@ -338,10 +339,23 @@ function Services() {
           </div>
         )}
 
-        {filteredServices.map((service, index) => {
-          const id = service.Service_ID || index;
-          const isExpanded = expandedId === id;
-          const customerName = getRecordCustomerName(service, customers);
+        {serviceStatusSections.map((section) => (
+          <section key={section.key} className={`service-status-section ${section.key}`}>
+            <div className="service-status-section-header">
+              <div>
+                <h3>{section.title}</h3>
+                <p>{section.description}</p>
+              </div>
+              <span className={`status-badge ${section.badgeClass}`}>
+                {section.services.length}
+              </span>
+            </div>
+
+            <div className="record-list">
+              {section.services.map((service, index) => {
+                const id = service.Service_ID || `${section.key}-${index}`;
+                const isExpanded = expandedId === id;
+                const customerName = getRecordCustomerName(service, customers);
 
           return (
             <div key={id} className="record-card">
@@ -509,7 +523,10 @@ function Services() {
               )}
             </div>
           );
-        })}
+              })}
+            </div>
+          </section>
+        ))}
       </div>
 
       {editingService && (
@@ -659,6 +676,59 @@ function Services() {
       )}
     </div>
   );
+}
+
+function getServiceStatusSections(services) {
+  const sections = [
+    {
+      key: "pending",
+      title: "Pending Services",
+      description: "Services waiting to be completed.",
+      badgeClass: "status-expired",
+      services: [],
+    },
+    {
+      key: "rescheduled",
+      title: "Rescheduled Services",
+      description: "Services moved to another date.",
+      badgeClass: "status-info",
+      services: [],
+    },
+    {
+      key: "completed",
+      title: "Completed Services",
+      description: "Services already finished.",
+      badgeClass: "status-active",
+      services: [],
+    },
+    {
+      key: "cancelled",
+      title: "Cancelled Services",
+      description: "Services that were cancelled.",
+      badgeClass: "status-cancelled",
+      services: [],
+    },
+    {
+      key: "other",
+      title: "Other Services",
+      description: "Services with another status.",
+      badgeClass: "status-neutral",
+      services: [],
+    },
+  ];
+
+  const sectionByStatus = sections.reduce((map, section) => {
+    map[section.key] = section;
+    return map;
+  }, {});
+
+  services.forEach((service) => {
+    const status = String(service.Service_Status || "").toLowerCase().trim();
+    const section = sectionByStatus[status] || sectionByStatus.other;
+    section.services.push(service);
+  });
+
+  return sections.filter((section) => section.services.length > 0);
 }
 
 function getFilterTitle(filter) {
