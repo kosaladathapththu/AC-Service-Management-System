@@ -10,6 +10,9 @@ function Customers() {
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedId, setExpandedId] = useState(null);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedChannel, setSelectedChannel] = useState("all");
+
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [editFormData, setEditFormData] = useState({
     Customer_Name: "",
@@ -19,6 +22,7 @@ function Customers() {
     Google_Map_Link: "",
     Created_Date: "",
     Notes: "",
+    Sales_Channel: "",
   });
 
   useEffect(() => {
@@ -52,6 +56,7 @@ function Customers() {
       Google_Map_Link: customer.Google_Map_Link || customer.Google_Map_Li || "",
       Created_Date: formatDateForInput(customer.Created_Date),
       Notes: customer.Notes || "",
+      Sales_Channel: customer.Sales_Channel || "Showroom",
     });
   }
 
@@ -65,6 +70,7 @@ function Customers() {
       Google_Map_Link: "",
       Created_Date: "",
       Notes: "",
+      Sales_Channel: "",
     });
   }
 
@@ -105,8 +111,38 @@ function Customers() {
     return "-";
   }
 
+  function getFilteredCustomers() {
+    return customers.filter((customer) => {
+      const customerName = String(getValue(customer, ["Customer_Name", "Customer Name", "name"]) || "").toLowerCase();
+      const phone = String(getValue(customer, ["Phone", "phone"]) || "").toLowerCase();
+      
+      // Get sales channel - try multiple field name variations
+      let salesChannel = customer.Sales_Channel || customer.sales_channel || "Showroom";
+      if (salesChannel === "-") {
+        salesChannel = "Showroom";
+      }
+      salesChannel = String(salesChannel).toLowerCase().trim();
+
+      // Check if search query matches
+      const matchesSearch =
+        !searchQuery ||
+        customerName.includes(searchQuery.toLowerCase()) ||
+        phone.includes(searchQuery.toLowerCase());
+
+      // Check if channel filter matches
+      const filterChannel = String(selectedChannel).toLowerCase().trim();
+      const matchesChannel =
+        filterChannel === "all" ||
+        salesChannel === filterChannel;
+
+      return matchesSearch && matchesChannel;
+    });
+  }
+
   if (loading) return <p>Loading customers...</p>;
   if (error) return <p className="error-text">Error: {error}</p>;
+
+  const filteredCustomers = getFilteredCustomers();
 
   return (
     <div>
@@ -117,10 +153,43 @@ function Customers() {
 
       {successMessage && <p className="success-text">{successMessage}</p>}
 
-      <div className="record-list">
-        {customers.length === 0 && <p className="empty-list">No customers found.</p>}
+      <div className="search-filter-section">
+        <div className="search-box">
+          <input
+            type="text"
+            placeholder="Search by name or phone..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
+          />
+        </div>
 
-        {customers.map((customer, index) => {
+        <div className="filter-buttons">
+          <button
+            className={`filter-btn ${selectedChannel === "all" ? "active" : ""}`}
+            onClick={() => setSelectedChannel("all")}
+          >
+            All Customers
+          </button>
+          <button
+            className={`filter-btn ${selectedChannel === "showroom" ? "active" : ""}`}
+            onClick={() => setSelectedChannel("showroom")}
+          >
+            Showroom
+          </button>
+          <button
+            className={`filter-btn ${selectedChannel === "online" ? "active" : ""}`}
+            onClick={() => setSelectedChannel("online")}
+          >
+            Online
+          </button>
+        </div>
+      </div>
+
+      <div className="record-list">
+        {filteredCustomers.length === 0 && <p className="empty-list">No customers found.</p>}
+
+        {filteredCustomers.map((customer, index) => {
           const customerId = getValue(customer, ["Customer_ID", "customer_ID", "Customer ID", "id"]);
           const customerName = getValue(customer, ["Customer_Name", "Customer Name", "name"]);
           const phone = getValue(customer, ["Phone", "phone"]);
@@ -129,6 +198,7 @@ function Customers() {
           const googleMapLink = getValue(customer, ["Google_Map_Link", "Google_Map_Li", "Google Map Link", "googleMapLink"]);
           const createdDate = getValue(customer, ["Created_Date", "Created Date", "createdDate"]);
           const notes = getValue(customer, ["Notes", "notes"]);
+          const salesChannel = getValue(customer, ["Sales_Channel", "sales_channel"]) || "Showroom";
 
           const id = customerId !== "-" ? customerId : index;
           const isExpanded = expandedId === id;
@@ -189,6 +259,12 @@ function Customers() {
                       <span>{email !== "-" ? email : "—"}</span>
                     </div>
                     <div className="detail-item">
+                      <label>Customer Type</label>
+                      <span className={`customer-type-badge ${salesChannel.toLowerCase()}`}>
+                        {salesChannel}
+                      </span>
+                    </div>
+                    <div className="detail-item">
                       <label>Created Date</label>
                       <span>{formatDate(createdDate)}</span>
                     </div>
@@ -246,6 +322,13 @@ function Customers() {
                 <div className="form-group">
                   <label>Email</label>
                   <input type="email" name="Email" value={editFormData.Email} onChange={handleEditChange} />
+                </div>
+                <div className="form-group">
+                  <label>Customer Type</label>
+                  <select name="Sales_Channel" value={editFormData.Sales_Channel} onChange={handleEditChange}>
+                    <option value="Showroom">Showroom</option>
+                    <option value="Online">Online</option>
+                  </select>
                 </div>
                 <div className="form-group">
                   <label>Created Date</label>

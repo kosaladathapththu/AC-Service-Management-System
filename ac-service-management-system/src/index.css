@@ -517,6 +517,71 @@ input, select, textarea {
   margin-top: 1px;
 }
 
+/* Alert Content for Complex Alerts */
+.alert-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alert-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+/* Duplicate Customer Information */
+.duplicate-customer-info {
+  background: rgba(255, 255, 255, 0.5);
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin: 8px 0;
+  font-size: 12px;
+}
+
+.duplicate-customer-info p {
+  margin: 4px 0;
+  color: inherit;
+}
+
+.duplicate-customer-info p.text-gray {
+  color: #6B7280;
+  font-size: 11px;
+}
+
+.duplicate-customer-info strong {
+  font-weight: 600;
+}
+
+.duplicate-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.duplicate-actions button {
+  font-size: 12px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-tertiary {
+  background: rgba(255, 255, 255, 0.3);
+  color: inherit;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+.btn-tertiary:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
 /* Legacy text classes */
 .success-text {
   background: #F0FDF4;
@@ -2089,6 +2154,94 @@ tbody tr:hover td {
    for Services, Payments, Complaints, Installations
    Paste at the BOTTOM of index.css
    ============================================ */
+
+/* ============================================
+   SEARCH & FILTER SECTION
+   ============================================ */
+
+.search-filter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.search-box {
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #E5E7EB;
+  border-radius: 7px;
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.search-input::placeholder {
+  color: #9CA3AF;
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 8px 14px;
+  border: 1px solid #E5E7EB;
+  background: #FFFFFF;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6B7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.filter-btn:hover {
+  border-color: #D1D5DB;
+  background: #F9FAFB;
+}
+
+.filter-btn.active {
+  background: #2563EB;
+  color: #FFFFFF;
+  border-color: #2563EB;
+}
+
+.customer-type-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.customer-type-badge.showroom {
+  background: #DBEAFE;
+  color: #1E40AF;
+}
+
+.customer-type-badge.online {
+  background: #D1FAE5;
+  color: #065F46;
+}
 
 .record-list {
   display: flex;

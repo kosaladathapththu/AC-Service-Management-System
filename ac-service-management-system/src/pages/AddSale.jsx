@@ -35,6 +35,10 @@ function AddSale() {
   const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState("");
 
+  const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+  const [duplicateFound, setDuplicateFound] = useState(null);
+  const [ignoreDuplicate, setIgnoreDuplicate] = useState(false);
+
   useEffect(() => {
     loadCustomers();
   }, []);
@@ -55,6 +59,8 @@ function AddSale() {
     setSaleMode(mode);
     setSuccessMessage("");
     setError("");
+    setDuplicateFound(null);
+    setIgnoreDuplicate(false);
 
     setFormData((prev) => ({
       ...emptyForm,
@@ -95,6 +101,66 @@ function AddSale() {
   function handleChange(event) {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Check for duplicate customer when phone is entered in new mode
+    if (name === "Phone" && value && saleMode === "new" && !ignoreDuplicate) {
+      checkForDuplicate(value);
+    }
+  }
+
+  async function checkForDuplicate(phone) {
+    if (!phone || phone.length < 3) {
+      setDuplicateFound(null);
+      return;
+    }
+
+    try {
+      setCheckingDuplicate(true);
+      
+      // Search through loaded customers for matching phone
+      const foundCustomer = customers.find(
+        (customer) =>
+          customer.Phone &&
+          String(customer.Phone).toLowerCase().trim() === String(phone).toLowerCase().trim()
+      );
+
+      if (foundCustomer) {
+        setDuplicateFound(foundCustomer);
+      } else {
+        setDuplicateFound(null);
+      }
+    } catch (err) {
+      // Silently fail on duplicate check
+      setDuplicateFound(null);
+    } finally {
+      setCheckingDuplicate(false);
+    }
+  }
+
+  function handleUseDuplicateCustomer() {
+    if (!duplicateFound) return;
+
+    setSaleMode("existing");
+    setFormData((prev) => ({
+      ...prev,
+      Customer_ID: duplicateFound.Customer_ID,
+      Customer_Name: duplicateFound.Customer_Name || "",
+      Phone: duplicateFound.Phone || "",
+      Email: duplicateFound.Email || "",
+      Address: duplicateFound.Address || "",
+      Google_Map_Link:
+        duplicateFound.Google_Map_Link ||
+        duplicateFound.Google_Map_Li ||
+        "",
+      Created_Date: duplicateFound.Created_Date || today,
+      Notes: duplicateFound.Notes || "",
+    }));
+    setDuplicateFound(null);
+  }
+
+  function handleIgnoreDuplicate() {
+    setIgnoreDuplicate(true);
+    setDuplicateFound(null);
   }
 
   async function handleSubmit(event) {
@@ -138,6 +204,8 @@ function AddSale() {
     setSaleMode("new");
     setSuccessMessage("");
     setError("");
+    setDuplicateFound(null);
+    setIgnoreDuplicate(false);
   }
 
   return (
@@ -166,6 +234,41 @@ function AddSale() {
         <div className="alert alert-error">
           <span className="alert-icon">✕</span>
           {error}
+        </div>
+      )}
+
+      {duplicateFound && !ignoreDuplicate && (
+        <div className="alert alert-warning">
+          <div className="alert-content">
+            <div className="alert-header">
+              <span className="alert-icon">⚠️</span>
+              <strong>Customer Already Exists</strong>
+            </div>
+            <p>
+              A customer with phone number <strong>{formData.Phone}</strong> already exists in the system:
+            </p>
+            <div className="duplicate-customer-info">
+              <p><strong>{duplicateFound.Customer_Name}</strong></p>
+              <p>{duplicateFound.Phone}</p>
+              <p className="text-gray">{duplicateFound.Address || "Address not provided"}</p>
+            </div>
+            <div className="duplicate-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleUseDuplicateCustomer}
+              >
+                Use This Customer
+              </button>
+              <button
+                type="button"
+                className="btn-tertiary"
+                onClick={handleIgnoreDuplicate}
+              >
+                Create New Customer
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

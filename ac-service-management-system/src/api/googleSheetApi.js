@@ -169,3 +169,23 @@ export async function sendManualReminder(type, id) {
 
   return result.data;
 }
+
+export async function checkDuplicateCustomer(phone) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "checkDuplicateCustomer",
+      data: {
+        phone,
+      },
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.message || "Failed to check for duplicates");
+  }
+
+  return result.data;
+}
