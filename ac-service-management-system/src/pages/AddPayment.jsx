@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { addPayment, getAllData } from "../api/googleSheetApi";
+import { cachePaymentEvidence } from "../utils/paymentEvidenceStore";
 
 function AddPayment() {
   const today = new Date().toISOString().split("T")[0];
@@ -139,6 +140,7 @@ function AddPayment() {
       setSuccessMessage("");
 
       const result = await addPayment(formData);
+      cachePaymentEvidence(result.paymentId || result.Payment_ID, formData);
 
       const annualMessage =
         formData.Payment_Type === "Annual Service" &&

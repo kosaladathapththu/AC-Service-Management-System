@@ -5,12 +5,17 @@ import {
   updateRecord,
   sendManualReminder,
 } from "../api/googleSheetApi";
+import {
+  formatCustomerDisplay,
+  getRecordCustomerName,
+} from "../utils/customerDisplay";
 
 function Services() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeFilter = searchParams.get("filter") || "all";
 
   const [services, setServices] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sendingReminderId, setSendingReminderId] = useState("");
@@ -40,8 +45,13 @@ function Services() {
       setLoading(true);
       setError("");
 
-      const data = await getAllData("services");
-      setServices(data);
+      const [servicesData, customersData] = await Promise.all([
+        getAllData("services"),
+        getAllData("customers"),
+      ]);
+
+      setServices(servicesData);
+      setCustomers(customersData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -331,6 +341,7 @@ function Services() {
         {filteredServices.map((service, index) => {
           const id = service.Service_ID || index;
           const isExpanded = expandedId === id;
+          const customerName = getRecordCustomerName(service, customers);
 
           return (
             <div key={id} className="record-card">
@@ -345,7 +356,7 @@ function Services() {
                 <div className="record-summary">
                   <div className="record-primary-row">
                     <span className="record-customer-id">
-                      {service.Customer_ID || "—"}
+                      {formatCustomerDisplay(service.Customer_ID, customerName)}
                     </span>
 
                     <span className="record-separator">·</span>

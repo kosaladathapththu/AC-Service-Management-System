@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { getAllData, updateRecord } from "../api/googleSheetApi";
+import {
+  formatCustomerDisplay,
+  getRecordCustomerName,
+} from "../utils/customerDisplay";
 
 function Complaints() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeFilter = searchParams.get("filter") || "all";
 
   const [complaints, setComplaints] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -34,8 +39,13 @@ function Complaints() {
       setLoading(true);
       setError("");
 
-      const data = await getAllData("complaints");
-      setComplaints(data);
+      const [complaintsData, customersData] = await Promise.all([
+        getAllData("complaints"),
+        getAllData("customers"),
+      ]);
+
+      setComplaints(complaintsData);
+      setCustomers(customersData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -283,6 +293,7 @@ function Complaints() {
         {filteredComplaints.map((complaint, index) => {
           const id = complaint.Complaint_ID || index;
           const isExpanded = expandedId === id;
+          const customerName = getRecordCustomerName(complaint, customers);
 
           return (
             <div key={id} className="record-card">
@@ -297,7 +308,7 @@ function Complaints() {
                 <div className="record-summary">
                   <div className="record-primary-row">
                     <span className="record-customer-id">
-                      {complaint.Customer_ID || "—"}
+                      {formatCustomerDisplay(complaint.Customer_ID, customerName)}
                     </span>
 
                     <span className="record-separator">·</span>

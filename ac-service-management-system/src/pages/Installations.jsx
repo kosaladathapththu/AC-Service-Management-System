@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
 import { getAllData, updateRecord } from "../api/googleSheetApi";
+import {
+  formatCustomerDisplay,
+  getRecordCustomerName,
+} from "../utils/customerDisplay";
 
 function Installations() {
   const [installations, setInstallations] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -27,8 +32,13 @@ function Installations() {
     try {
       setLoading(true);
       setError("");
-      const data = await getAllData("installations");
-      setInstallations(data);
+      const [installationsData, customersData] = await Promise.all([
+        getAllData("installations"),
+        getAllData("customers"),
+      ]);
+
+      setInstallations(installationsData);
+      setCustomers(customersData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -105,6 +115,7 @@ function Installations() {
         {installations.map((installation, index) => {
           const id = installation.Installation_ID || index;
           const isExpanded = expandedId === id;
+          const customerName = getRecordCustomerName(installation, customers);
 
           return (
             <div key={id} className="record-card">
@@ -113,7 +124,7 @@ function Installations() {
 
                 <div className="record-summary">
                   <div className="record-primary-row">
-                    <span className="record-customer-id">{installation.Customer_ID || "—"}</span>
+                    <span className="record-customer-id">{formatCustomerDisplay(installation.Customer_ID, customerName)}</span>
                     <span className="record-separator">·</span>
                     <span className="record-ac-id">AC: {installation.AC_ID || "—"}</span>
                     <span className="record-separator">·</span>

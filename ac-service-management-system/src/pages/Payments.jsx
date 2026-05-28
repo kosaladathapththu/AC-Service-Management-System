@@ -6,6 +6,10 @@ import {
   sendManualReminder,
 } from "../api/googleSheetApi";
 import PaymentEvidence from "../components/PaymentEvidence";
+import {
+  formatCustomerDisplay,
+  getRecordCustomerName,
+} from "../utils/customerDisplay";
 import { getPaymentEvidence } from "../utils/paymentEvidence";
 
 function Payments() {
@@ -13,6 +17,7 @@ function Payments() {
   const activeFilter = searchParams.get("filter") || "all";
 
   const [payments, setPayments] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sendingReminderId, setSendingReminderId] = useState("");
@@ -41,8 +46,13 @@ function Payments() {
       setLoading(true);
       setError("");
 
-      const data = await getAllData("payments");
-      setPayments(data);
+      const [paymentsData, customersData] = await Promise.all([
+        getAllData("payments"),
+        getAllData("customers"),
+      ]);
+
+      setPayments(paymentsData);
+      setCustomers(customersData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -277,6 +287,7 @@ function Payments() {
           const id = payment.Payment_ID || index;
           const isExpanded = expandedId === id;
           const evidence = getPaymentEvidence(payment);
+          const customerName = getRecordCustomerName(payment, customers);
 
           return (
             <div key={id} className="record-card">
@@ -286,7 +297,7 @@ function Payments() {
                 <div className="record-summary">
                   <div className="record-primary-row">
                     <span className="record-customer-id">
-                      {payment.Customer_ID || "—"}
+                      {formatCustomerDisplay(payment.Customer_ID, customerName)}
                     </span>
 
                     <span className="record-separator">·</span>
