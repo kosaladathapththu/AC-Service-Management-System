@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getDashboardData } from "../api/googleSheetApi";
+import { getAllData, getCustomerProfile, getDashboardData } from "../api/googleSheetApi";
+import PaymentEvidence from "../components/PaymentEvidence";
+import { getPaymentEvidence } from "../utils/paymentEvidence";
 
 function Dashboard() {
   const [dashboardData, setDashboardData] = useState(null);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [error, setError] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [selectedProfile, setSelectedProfile] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
@@ -16,12 +22,39 @@ function Dashboard() {
       setLoading(true);
       setError("");
 
-      const data = await getDashboardData();
+      const [data, customersData] = await Promise.all([
+        getDashboardData(),
+        getAllData("customers"),
+      ]);
+
       setDashboardData(data);
+      setCustomers(customersData);
     } catch (error) {
       setError(error.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function openCustomerProfile(customer) {
+    const customerId = getValue(customer, [
+      "Customer_ID",
+      "customer_ID",
+      "Customer ID",
+      "id",
+    ]);
+
+    if (!customerId || customerId === "-") return;
+
+    try {
+      setProfileLoading(true);
+      setError("");
+      const profile = await getCustomerProfile(customerId);
+      setSelectedProfile(profile);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setProfileLoading(false);
     }
   }
 
@@ -41,6 +74,14 @@ function Dashboard() {
           Main action center for services, payments, complaints, and warranties.
         </p>
       </div>
+
+      <CustomerLookup
+        query={customerSearch}
+        customers={customers}
+        loading={profileLoading}
+        onQueryChange={setCustomerSearch}
+        onOpenProfile={openCustomerProfile}
+      />
 
       <div className="dashboard-action-grid">
         <DashboardActionCard
@@ -134,6 +175,200 @@ function Dashboard() {
         type="complaint"
         data={dashboardData.openComplaintsList}
       />
+
+      {selectedProfile && (
+        <CustomerProfileModal
+          profile={selectedProfile}
+          onClose={() => setSelectedProfile(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function CustomerLookup({
+  query,
+  customers,
+  loading,
+  onQueryChange,
+  onOpenProfile,
+}) {
+  const results = getCustomerSearchResults(customers, query);
+
+  return (
+    <div className="dashboard-customer-lookup">
+      <div>
+        <h3>Find Customer</h3>
+        <p>Search by customer name or phone number to view full details.</p>
+      </div>
+
+      <div className="dashboard-customer-search">
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+          placeholder="Enter customer name or phone number"
+        />
+        {query && (
+          <button type="button" onClick={() => onQueryChange("")}>
+            Clear
+          </button>
+        )}
+      </div>
+
+      {query.trim() && (
+        <div className="dashboard-customer-results">
+          {results.length === 0 ? (
+            <p className="dashboard-customer-empty">No customer found.</p>
+          ) : (
+            results.map((customer, index) => {
+              const customerId = getValue(customer, [
+                "Customer_ID",
+                "customer_ID",
+                "Customer ID",
+                "id",
+              ]);
+              const customerName = getValue(customer, [
+                "Customer_Name",
+                "Customer Name",
+                "name",
+              ]);
+              const phone = getValue(customer, ["Phone", "phone"]);
+
+              return (
+                <button
+                  key={customerId !== "-" ? customerId : index}
+                  type="button"
+                  onClick={() => onOpenProfile(customer)}
+                  disabled={loading}
+                >
+                  <span>{customerId} - {customerName}</span>
+                  <small>{phone}</small>
+                </button>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CustomerProfileModal({ profile, onClose }) {
+  const {
+    customer,
+    acUnits = [],
+    installations = [],
+    services = [],
+    payments = [],
+    complaints = [],
+  } = profile;
+
+  const customerId = getValue(customer, ["Customer_ID", "customer_ID", "Customer ID", "id"]);
+  const customerName = getValue(customer, ["Customer_Name", "Customer Name", "name"]);
+  const phone = getValue(customer, ["Phone", "phone"]);
+  const email = getValue(customer, ["Email", "email"]);
+  const address = getValue(customer, ["Address", "address"]);
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-card dashboard-profile-modal">
+        <div className="modal-header">
+          <h3>{customerName}</h3>
+          <button className="close-btn" onClick={onClose}>×</button>
+        </div>
+
+        <p className="modal-subtitle">
+          {customerId} | {phone} | {email}
+        </p>
+        <p className="dashboard-profile-address">{address}</p>
+
+        <DashboardProfileSection title="AC Units" count={acUnits.length}>
+          {acUnits.map((unit, index) => (
+            <MiniRecord key={unit.AC_ID || index} id={unit.AC_ID}>
+              <span>{unit.AC_Model || "-"}</span>
+              <span>{unit.Serial_Number || "-"}</span>
+              <span className={`status-badge ${getWarrantyStatusClass(unit.Warranty_Status)}`}>
+                {unit.Warranty_Status || "-"}
+              </span>
+            </MiniRecord>
+          ))}
+        </DashboardProfileSection>
+
+        <DashboardProfileSection title="Installations" count={installations.length}>
+          {installations.map((item, index) => (
+            <MiniRecord key={item.Installation_ID || index} id={item.Installation_ID}>
+              <span>AC: {item.AC_ID || "-"}</span>
+              <span>{formatDate(item.Installation_Date)}</span>
+              <span className={`status-badge ${getInstallationStatusClass(item.Installation_Status)}`}>
+                {item.Installation_Status || "-"}
+              </span>
+            </MiniRecord>
+          ))}
+        </DashboardProfileSection>
+
+        <DashboardProfileSection title="Services" count={services.length}>
+          {services.map((item, index) => (
+            <MiniRecord key={item.Service_ID || index} id={item.Service_ID}>
+              <span>AC: {item.AC_ID || "-"}</span>
+              <span>{formatDate(item.Service_Date)}</span>
+              <span className={`status-badge ${getServiceStatusClass(item.Service_Status)}`}>
+                {item.Service_Status || "-"}
+              </span>
+            </MiniRecord>
+          ))}
+        </DashboardProfileSection>
+
+        <DashboardProfileSection title="Payments" count={payments.length}>
+          {payments.map((item, index) => {
+            const evidence = getPaymentEvidence(item);
+
+            return (
+              <MiniRecord key={item.Payment_ID || index} id={item.Payment_ID}>
+                <span>{formatPrice(item.Amount)}</span>
+                <span>{item.Payment_Type || "-"}</span>
+                <span className={`status-badge ${getPaymentStatusClass(item.Payment_Status)}`}>
+                  {item.Payment_Status || "-"}
+                </span>
+                {evidence.hasEvidence && <PaymentEvidence evidence={evidence} />}
+              </MiniRecord>
+            );
+          })}
+        </DashboardProfileSection>
+
+        <DashboardProfileSection title="Complaints" count={complaints.length}>
+          {complaints.map((item, index) => (
+            <MiniRecord key={item.Complaint_ID || index} id={item.Complaint_ID}>
+              <span>AC: {item.AC_ID || "-"}</span>
+              <span>{item.Issue_Description || "-"}</span>
+              <span className={`status-badge ${getComplaintStatusClass(item.Complaint_Status)}`}>
+                {item.Complaint_Status || "-"}
+              </span>
+            </MiniRecord>
+          ))}
+        </DashboardProfileSection>
+      </div>
+    </div>
+  );
+}
+
+function DashboardProfileSection({ title, count, children }) {
+  return (
+    <div className="dashboard-profile-section">
+      <div className="dashboard-profile-section-header">
+        <h4>{title}</h4>
+        <span>{count}</span>
+      </div>
+      {count === 0 ? <p>No records found.</p> : <div>{children}</div>}
+    </div>
+  );
+}
+
+function MiniRecord({ id, children }) {
+  return (
+    <div className="dashboard-mini-record">
+      <strong>{id || "-"}</strong>
+      <div>{children}</div>
     </div>
   );
 }
@@ -314,6 +549,40 @@ function ReminderSection({ title, description, type, data = [] }) {
   );
 }
 
+function getCustomerSearchResults(customers, query) {
+  const cleanQuery = String(query || "").trim().toLowerCase();
+  if (!cleanQuery) return [];
+
+  return customers
+    .filter((customer) => {
+      const name = getValue(customer, ["Customer_Name", "Customer Name", "name"]);
+      const phone = getValue(customer, ["Phone", "phone"]);
+      const customerId = getValue(customer, [
+        "Customer_ID",
+        "customer_ID",
+        "Customer ID",
+        "id",
+      ]);
+
+      return [name, phone, customerId].some((value) =>
+        String(value || "").toLowerCase().includes(cleanQuery)
+      );
+    })
+    .slice(0, 8);
+}
+
+function getValue(row, keys) {
+  if (!row) return "-";
+
+  for (const key of keys) {
+    if (row[key] !== undefined && row[key] !== null && row[key] !== "") {
+      return row[key];
+    }
+  }
+
+  return "-";
+}
+
 function formatDate(value) {
   if (!value) return "-";
 
@@ -330,6 +599,30 @@ function formatPrice(value) {
   if (Number.isNaN(numberValue)) return String(value);
 
   return `Rs. ${numberValue.toLocaleString("en-LK")}`;
+}
+
+function getWarrantyStatusClass(status) {
+  if (!status) return "";
+
+  const value = String(status).toLowerCase();
+
+  if (value === "active") return "status-active";
+  if (value === "expired") return "status-expired";
+  if (value === "cancelled") return "status-cancelled";
+
+  return "";
+}
+
+function getInstallationStatusClass(status) {
+  if (!status) return "";
+
+  const value = String(status).toLowerCase();
+
+  if (value === "completed") return "status-active";
+  if (value === "pending") return "status-expired";
+  if (value === "cancelled") return "status-cancelled";
+
+  return "";
 }
 
 function getServiceStatusClass(status) {
