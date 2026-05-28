@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getCustomerProfile } from "../api/googleSheetApi";
+import PaymentEvidence from "../components/PaymentEvidence";
+import { getPaymentEvidence } from "../utils/paymentEvidence";
 
 function CustomerProfile() {
   const { id } = useParams();
@@ -235,39 +237,46 @@ function CustomerProfile() {
 
       {/* Payments */}
       <ProfileSection title="Payment History" count={payments.length}>
-        {payments.map((pay, index) => (
-          <div key={pay.Payment_ID || index} className="record-card">
-            <div className="record-card-main" style={{ cursor: "default" }}>
-              <span className="record-id-badge">{pay.Payment_ID || "—"}</span>
-              <div className="record-summary">
-                <div className="record-primary-row">
-                  <span className="record-ac-id">AC: {pay.AC_ID || "—"}</span>
-                  <span className="record-separator">·</span>
-                  <span className="record-amount">{formatPrice(pay.Amount)}</span>
-                  <span className="record-separator">·</span>
-                  <span className="record-date">Due: {formatDate(pay.Due_Date)}</span>
-                  {pay.Payment_Date && (
-                    <>
-                      <span className="record-separator">·</span>
-                      <span className="record-date">Paid: {formatDate(pay.Payment_Date)}</span>
-                    </>
-                  )}
-                </div>
-                <div className="record-badge-row">
-                  <span className={`status-badge ${getPaymentStatusClass(pay.Payment_Status)}`}>
-                    {pay.Payment_Status || "—"}
-                  </span>
-                  {pay.Payment_Type && (
-                    <span className={`status-badge ${getPaymentTypeClass(pay.Payment_Type)}`}>
-                      {pay.Payment_Type}
+        {payments.map((pay, index) => {
+          const evidence = getPaymentEvidence(pay);
+
+          return (
+            <div key={pay.Payment_ID || index} className="record-card">
+              <div className="record-card-main" style={{ cursor: "default" }}>
+                <span className="record-id-badge">{pay.Payment_ID || "—"}</span>
+                <div className="record-summary">
+                  <div className="record-primary-row">
+                    <span className="record-ac-id">AC: {pay.AC_ID || "—"}</span>
+                    <span className="record-separator">·</span>
+                    <span className="record-amount">{formatPrice(pay.Amount)}</span>
+                    <span className="record-separator">·</span>
+                    <span className="record-date">Due: {formatDate(pay.Due_Date)}</span>
+                    {pay.Payment_Date && (
+                      <>
+                        <span className="record-separator">·</span>
+                        <span className="record-date">Paid: {formatDate(pay.Payment_Date)}</span>
+                      </>
+                    )}
+                  </div>
+                  <div className="record-badge-row">
+                    <span className={`status-badge ${getPaymentStatusClass(pay.Payment_Status)}`}>
+                      {pay.Payment_Status || "—"}
                     </span>
-                  )}
-                  {pay.Payment_Year && <span className="status-neutral">{pay.Payment_Year}</span>}
+                    {pay.Payment_Type && (
+                      <span className={`status-badge ${getPaymentTypeClass(pay.Payment_Type)}`}>
+                        {pay.Payment_Type}
+                      </span>
+                    )}
+                    {pay.Payment_Year && <span className="status-neutral">{pay.Payment_Year}</span>}
+                    {evidence.hasEvidence && <span className="status-badge status-info">Evidence</span>}
+                  </div>
+
+                  {evidence.hasEvidence && <PaymentEvidence evidence={evidence} />}
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </ProfileSection>
 
       {/* Complaints */}

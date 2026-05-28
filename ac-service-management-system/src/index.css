@@ -2434,6 +2434,49 @@ tbody tr:hover td {
   grid-column: 1 / -1;
 }
 
+.payment-evidence {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.payment-evidence-thumb-link {
+  display: block;
+  width: 220px;
+  max-width: 100%;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #FFFFFF;
+}
+
+.payment-evidence-thumb {
+  display: block;
+  width: 100%;
+  max-height: 160px;
+  object-fit: contain;
+  background: #F9FAFB;
+}
+
+.payment-evidence-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 160px;
+}
+
+.payment-evidence-actions a {
+  color: #2563EB;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.payment-evidence-actions a:hover {
+  text-decoration: underline;
+}
+
 /* ── Reminder button overrides for card layout ── */
 .record-actions .reminder-btn {
   background: #16A34A;
