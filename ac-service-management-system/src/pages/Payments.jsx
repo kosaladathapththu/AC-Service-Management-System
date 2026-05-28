@@ -441,6 +441,47 @@ function Payments() {
                         <span>{payment.Notes}</span>
                       </div>
                     )}
+
+                    {(payment.Payment_Evidence_Link || payment.Payment_Evidence_File_Name || payment.Payment_Evidence_File_Data_URL) && (
+                      <div className="detail-item detail-full">
+                        <label>Payment Evidence</label>
+                        <span>
+                          {payment.Payment_Evidence_Link && (
+                            <a href={payment.Payment_Evidence_Link} target="_blank" rel="noreferrer">
+                              View Evidence Link
+                            </a>
+                          )}
+
+                          {payment.Payment_Evidence_File_Data_URL && String(payment.Payment_Evidence_File_Data_URL).startsWith("data:image") && (
+                            <div style={{ marginTop: 6 }}>
+                              <img
+                                src={payment.Payment_Evidence_File_Data_URL}
+                                alt={payment.Payment_Evidence_File_Name || "evidence"}
+                                style={{ maxWidth: 300, maxHeight: 200 }}
+                              />
+                            </div>
+                          )}
+
+                          {payment.Payment_Evidence_File_Data_URL && !String(payment.Payment_Evidence_File_Data_URL).startsWith("data:image") && (
+                            <a
+                              href={payment.Payment_Evidence_File_Data_URL}
+                              download={payment.Payment_Evidence_File_Name}
+                            >
+                              Download {payment.Payment_Evidence_File_Name}
+                            </a>
+                          )}
+
+                          {!payment.Payment_Evidence_File_Data_URL && payment.Payment_Evidence_File_Name && payment.Payment_Evidence_File_Data && (
+                            <a
+                              href={`data:application/octet-stream;base64,${payment.Payment_Evidence_File_Data}`}
+                              download={payment.Payment_Evidence_File_Name}
+                            >
+                              Download {payment.Payment_Evidence_File_Name}
+                            </a>
+                          )}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

@@ -15,6 +15,11 @@ function AddPayment() {
     Due_Date: today,
     Annual_Service_Count: "3",
     Notes: "",
+    Payment_Evidence_Method: "link", // 'link' or 'file'
+    Payment_Evidence_Link: "",
+    Payment_Evidence_File_Name: "",
+    Payment_Evidence_File_Data: "",
+    Payment_Evidence_File_Data_URL: "",
   };
 
   const [customers, setCustomers] = useState([]);
@@ -93,6 +98,36 @@ function AddPayment() {
       ...previousData,
       [name]: value,
     }));
+  }
+
+  function handleFileChange(event) {
+    const file = event.target.files && event.target.files[0];
+
+    if (!file) {
+      // clear file fields
+      setFormData((prev) => ({
+        ...prev,
+        Payment_Evidence_File_Name: "",
+        Payment_Evidence_File_Data: "",
+      }));
+
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result || ""; // data:[mime];base64,xxxxx
+      const base64 = (result.split(",")[1] || "");
+
+      setFormData((prev) => ({
+        ...prev,
+        Payment_Evidence_File_Name: file.name,
+        Payment_Evidence_File_Data: base64,
+        Payment_Evidence_File_Data_URL: result,
+      }));
+    };
+
+    reader.readAsDataURL(file);
   }
 
   async function handleSubmit(event) {
@@ -306,6 +341,76 @@ function AddPayment() {
                 placeholder="Add payment notes..."
               ></textarea>
             </div>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h3>Payment Evidence</h3>
+
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Evidence Method</label>
+              <select
+                name="Payment_Evidence_Method"
+                value={formData.Payment_Evidence_Method}
+                onChange={handleChange}
+              >
+                <option value="link">Google Drive / Link</option>
+                <option value="file">Upload File</option>
+              </select>
+            </div>
+
+            {formData.Payment_Evidence_Method === "link" && (
+              <div className="form-group full-width">
+                <label>Evidence Link</label>
+                <input
+                  type="url"
+                  name="Payment_Evidence_Link"
+                  value={formData.Payment_Evidence_Link}
+                  onChange={handleChange}
+                  placeholder="https://drive.google.com/..."
+                />
+                <span className="form-hint">Paste a Google Drive share link or any file URL.</span>
+                {formData.Payment_Evidence_Link && (
+                  <div className="evidence-preview">
+                    <label>Preview</label>
+                    <div>
+                      <a href={formData.Payment_Evidence_Link} target="_blank" rel="noreferrer">Open evidence link</a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {formData.Payment_Evidence_Method === "file" && (
+              <div className="form-group full-width">
+                <label>Upload File</label>
+                <input type="file" accept="image/*,application/pdf" onChange={handleFileChange} />
+                {formData.Payment_Evidence_File_Name && (
+                  <span className="form-hint">Selected: {formData.Payment_Evidence_File_Name}</span>
+                )}
+                <span className="form-hint">Files are encoded and sent with the payment record.</span>
+
+                {formData.Payment_Evidence_File_Data_URL && (
+                  <div className="evidence-preview">
+                    <label>Preview</label>
+                    <div>
+                      {String(formData.Payment_Evidence_File_Data_URL).startsWith("data:image") ? (
+                        <img
+                          src={formData.Payment_Evidence_File_Data_URL}
+                          alt={formData.Payment_Evidence_File_Name}
+                          style={{ maxWidth: "240px", maxHeight: "160px", display: "block", marginTop: "6px" }}
+                        />
+                      ) : (
+                        <a href={formData.Payment_Evidence_File_Data_URL} download={formData.Payment_Evidence_File_Name}>
+                          Download {formData.Payment_Evidence_File_Name}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
