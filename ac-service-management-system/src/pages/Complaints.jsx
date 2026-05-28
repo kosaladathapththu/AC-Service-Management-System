@@ -5,6 +5,7 @@ import {
   formatCustomerDisplay,
   getRecordCustomerName,
 } from "../utils/customerDisplay";
+import { recordMatchesSearch } from "../utils/recordSearch";
 
 function Complaints() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -17,6 +18,7 @@ function Complaints() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedId, setExpandedId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [editingComplaint, setEditingComplaint] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -67,6 +69,8 @@ function Complaints() {
   const filteredComplaints = complaints.filter((complaint) => {
     const status = String(complaint.Complaint_Status || "").toLowerCase();
     const costType = String(complaint.Cost_Type || "").toLowerCase();
+
+    if (!complaintMatchesSearch(complaint, customers, searchQuery)) return false;
 
     if (activeFilter === "open") {
       return status === "open" || status === "in progress";
@@ -275,6 +279,20 @@ function Complaints() {
             Free Repair
           </button>
         </div>
+      </div>
+
+      <div className="record-search-panel">
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search complaints by customer, AC, ID, status, issue, technician..."
+        />
+        {searchQuery && (
+          <button type="button" onClick={() => setSearchQuery("")}>
+            Clear
+          </button>
+        )}
       </div>
 
       <div className="record-list">
@@ -559,6 +577,22 @@ function Complaints() {
       )}
     </div>
   );
+}
+
+function complaintMatchesSearch(complaint, customers, query) {
+  return recordMatchesSearch(complaint, customers, query, [
+    "Complaint_ID",
+    "Customer_ID",
+    "AC_ID",
+    "Complaint_Date",
+    "Issue_Description",
+    "Technician_Name",
+    "Action_Taken",
+    "Cost_Type",
+    "Cost_Amount",
+    "Complaint_Status",
+    "Notes",
+  ]);
 }
 
 function getFilterTitle(filter) {

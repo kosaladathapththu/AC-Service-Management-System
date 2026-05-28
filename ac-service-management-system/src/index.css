@@ -2260,6 +2260,103 @@ tbody tr:hover td {
 }
 
 /* ── Card shell ── */
+.record-search-panel {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.record-search-panel input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: #111827;
+  background: #FFFFFF;
+  font-size: 13px;
+}
+
+.record-search-panel input:focus {
+  outline: none;
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.record-search-panel button {
+  min-height: 40px;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  padding: 0 14px;
+  color: #374151;
+  background: #FFFFFF;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.record-search-panel button:hover {
+  background: #F3F4F6;
+}
+
+.customer-record-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.customer-record-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.customer-record-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #F9FAFB;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.customer-record-card-header h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.customer-record-card-header p {
+  margin: 3px 0 0;
+  color: #6B7280;
+  font-size: 12px;
+}
+
+.customer-record-status-counts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.customer-record-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.customer-record-row {
+  background: #FFFFFF;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.customer-record-row:last-child {
+  border-bottom: none;
+}
+
 .record-card {
   background: #FFFFFF;
   border: 1px solid #E5E7EB;
@@ -2520,6 +2617,27 @@ tbody tr:hover td {
   cursor: not-allowed;
 }
 
+.record-actions .mark-completed-btn {
+  background: #16A34A;
+  color: #FFFFFF;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.record-actions .mark-completed-btn:hover {
+  background: #15803D;
+}
+
+.record-actions .mark-completed-btn:disabled {
+  background: #9CA3AF;
+  cursor: not-allowed;
+}
+
 .record-actions .edit-btn {
   padding: 6px 12px;
   font-size: 12px;
@@ -2562,6 +2680,15 @@ tbody tr:hover td {
   .record-actions {
     flex-direction: column;
     gap: 4px;
+  }
+
+  .customer-record-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .customer-record-status-counts {
+    justify-content: flex-start;
   }
 }
 
@@ -3238,6 +3365,63 @@ tbody tr:hover td {
   font-size: 12px;
 }
 
+.service-customer-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.service-customer-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.service-customer-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #F9FAFB;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.service-customer-card-header h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.service-customer-card-header p {
+  margin: 3px 0 0;
+  color: #6B7280;
+  font-size: 12px;
+}
+
+.service-customer-status-counts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.service-customer-service-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.service-row-card {
+  background: #FFFFFF;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.service-row-card:last-child {
+  border-bottom: none;
+}
+
 @media (max-width: 800px) {
   .service-filter-panel {
     align-items: flex-start;
@@ -3245,6 +3429,15 @@ tbody tr:hover td {
   }
 
   .service-filter-actions {
+    justify-content: flex-start;
+  }
+
+  .service-customer-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .service-customer-status-counts {
     justify-content: flex-start;
   }
 }

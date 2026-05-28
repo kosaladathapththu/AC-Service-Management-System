@@ -11,6 +11,7 @@ import {
   getRecordCustomerName,
 } from "../utils/customerDisplay";
 import { getPaymentEvidence } from "../utils/paymentEvidence";
+import { recordMatchesSearch } from "../utils/recordSearch";
 
 function Payments() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -25,6 +26,7 @@ function Payments() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedId, setExpandedId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [editingPayment, setEditingPayment] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -75,6 +77,8 @@ function Payments() {
   const filteredPayments = payments.filter((payment) => {
     const status = String(payment.Payment_Status || "").toLowerCase();
 
+    if (!paymentMatchesSearch(payment, customers, searchQuery)) return false;
+
     if (activeFilter === "pending") return status === "pending";
     if (activeFilter === "paid") return status === "paid";
     if (activeFilter === "overdue") {
@@ -92,6 +96,7 @@ function Payments() {
 
     return true;
   });
+  const paymentCustomerGroups = getPaymentCustomerGroups(filteredPayments, customers);
 
   function toggleExpand(paymentId) {
     setExpandedId((prev) => (prev === paymentId ? null : paymentId));
@@ -296,7 +301,21 @@ function Payments() {
         </div>
       </div>
 
-      <div className="record-list">
+      <div className="record-search-panel">
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search payments by customer, AC, ID, status, type, amount..."
+        />
+        {searchQuery && (
+          <button type="button" onClick={() => setSearchQuery("")}>
+            Clear
+          </button>
+        )}
+      </div>
+
+      <div className="customer-record-groups">
         {filteredPayments.length === 0 && (
           <div className="empty-list-card">
             <p>No payment records found for this filter.</p>
@@ -306,14 +325,36 @@ function Payments() {
           </div>
         )}
 
-        {filteredPayments.map((payment, index) => {
-          const id = payment.Payment_ID || index;
+        {paymentCustomerGroups.map((group) => (
+          <section key={group.key} className="customer-record-card">
+            <div className="customer-record-card-header">
+              <div>
+                <h3>{group.title}</h3>
+                <p>{group.description}</p>
+              </div>
+              <div className="customer-record-status-counts">
+                {group.statusCounts.pending > 0 && (
+                  <span className="status-badge status-expired">
+                    {group.statusCounts.pending} Pending
+                  </span>
+                )}
+                {group.statusCounts.paid > 0 && (
+                  <span className="status-badge status-active">
+                    {group.statusCounts.paid} Paid
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="customer-record-list">
+              {group.payments.map((payment, index) => {
+          const id = payment.Payment_ID || `${group.key}-${index}`;
           const isExpanded = expandedId === id;
           const evidence = getPaymentEvidence(payment);
           const customerName = getRecordCustomerName(payment, customers);
 
           return (
-            <div key={id} className="record-card">
+            <div key={id} className="customer-record-row">
               <div className="record-card-main" onClick={() => toggleExpand(id)}>
                 <span className="record-id-badge">{payment.Payment_ID || "—"}</span>
 
@@ -506,7 +547,10 @@ function Payments() {
               )}
             </div>
           );
-        })}
+              })}
+            </div>
+          </section>
+        ))}
       </div>
 
       {editingPayment && (
@@ -658,6 +702,62 @@ function Payments() {
       )}
     </div>
   );
+}
+
+function paymentMatchesSearch(payment, customers, query) {
+  return recordMatchesSearch(payment, customers, query, [
+    "Payment_ID",
+    "Customer_ID",
+    "AC_ID",
+    "Payment_Year",
+    "Payment_Date",
+    "Amount",
+    "Payment_Type",
+    "Payment_Status",
+    "Due_Date",
+    "Annual_Service_Count",
+    "Service_Generated",
+    "Reminder_Status",
+    "Notes",
+  ]);
+}
+
+function getPaymentCustomerGroups(payments, customers) {
+  const groupMap = new Map();
+
+  payments.forEach((payment) => {
+    const customerId = payment.Customer_ID || "-";
+    const customerName = getRecordCustomerName(payment, customers);
+    const key = String(customerId).trim() || "unknown-customer";
+
+    if (!groupMap.has(key)) {
+      groupMap.set(key, {
+        key,
+        title: formatCustomerDisplay(customerId, customerName),
+        description: "",
+        payments: [],
+        statusCounts: {
+          pending: 0,
+          paid: 0,
+        },
+      });
+    }
+
+    const group = groupMap.get(key);
+    group.payments.push(payment);
+
+    const status = String(payment.Payment_Status || "").toLowerCase().trim();
+    if (group.statusCounts[status] !== undefined) {
+      group.statusCounts[status] += 1;
+    }
+  });
+
+  return Array.from(groupMap.values()).map((group) => ({
+    ...group,
+    description: `${group.payments.length} payment${
+      group.payments.length === 1 ? "" : "s"
+    } for this customer`,
+  }));
 }
 
 function getFilterTitle(filter) {

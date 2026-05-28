@@ -1,17 +1,24 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { getAllData, updateRecord } from "../api/googleSheetApi";
+import {
+  formatCustomerDisplay,
+  getRecordCustomerName,
+} from "../utils/customerDisplay";
+import { recordMatchesSearch } from "../utils/recordSearch";
 
 function ACUnits() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeFilter = searchParams.get("filter") || "all";
 
   const [acUnits, setAcUnits] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedId, setExpandedId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [editingUnit, setEditingUnit] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -35,8 +42,13 @@ function ACUnits() {
       setLoading(true);
       setError("");
 
-      const data = await getAllData("acUnits");
-      setAcUnits(data);
+      const [acUnitsData, customersData] = await Promise.all([
+        getAllData("acUnits"),
+        getAllData("customers"),
+      ]);
+
+      setAcUnits(acUnitsData);
+      setCustomers(customersData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -58,6 +70,8 @@ function ACUnits() {
   const filteredACUnits = acUnits.filter((unit) => {
     const warrantyStatus = String(unit.Warranty_Status || "").toLowerCase();
     const salesChannel = String(unit.Sales_Channel || "").toLowerCase();
+
+    if (!acUnitMatchesSearch(unit, customers, searchQuery)) return false;
 
     if (activeFilter === "active-warranty") {
       return warrantyStatus === "active";
@@ -81,6 +95,7 @@ function ACUnits() {
 
     return true;
   });
+  const acUnitCustomerGroups = getACUnitCustomerGroups(filteredACUnits, customers);
 
   function toggleExpand(acId) {
     setExpandedId((prev) => (prev === acId ? null : acId));
@@ -234,7 +249,21 @@ function ACUnits() {
         </div>
       </div>
 
-      <div className="record-list">
+      <div className="record-search-panel">
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search AC units by customer, AC ID, model, serial, warranty..."
+        />
+        {searchQuery && (
+          <button type="button" onClick={() => setSearchQuery("")}>
+            Clear
+          </button>
+        )}
+      </div>
+
+      <div className="customer-record-groups">
         {filteredACUnits.length === 0 && (
           <div className="empty-list-card">
             <p>No AC unit records found for this filter.</p>
@@ -247,12 +276,40 @@ function ACUnits() {
           </div>
         )}
 
-        {filteredACUnits.map((unit, index) => {
-          const id = unit.AC_ID || index;
+        {acUnitCustomerGroups.map((group) => (
+          <section key={group.key} className="customer-record-card">
+            <div className="customer-record-card-header">
+              <div>
+                <h3>{group.title}</h3>
+                <p>{group.description}</p>
+              </div>
+              <div className="customer-record-status-counts">
+                {group.statusCounts.active > 0 && (
+                  <span className="status-badge status-active">
+                    {group.statusCounts.active} Active
+                  </span>
+                )}
+                {group.statusCounts.expired > 0 && (
+                  <span className="status-badge status-info">
+                    {group.statusCounts.expired} Expired
+                  </span>
+                )}
+                {group.statusCounts.cancelled > 0 && (
+                  <span className="status-badge status-cancelled">
+                    {group.statusCounts.cancelled} Cancelled
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="customer-record-list">
+              {group.acUnits.map((unit, index) => {
+          const id = unit.AC_ID || `${group.key}-${index}`;
           const isExpanded = expandedId === id;
+          const customerName = getRecordCustomerName(unit, customers);
 
           return (
-            <div key={id} className="record-card">
+            <div key={id} className="customer-record-row">
               <div
                 className="record-card-main"
                 onClick={() => toggleExpand(id)}
@@ -262,7 +319,7 @@ function ACUnits() {
                 <div className="record-summary">
                   <div className="record-primary-row">
                     <span className="record-customer-id">
-                      {unit.Customer_ID || "—"}
+                      {formatCustomerDisplay(unit.Customer_ID, customerName)}
                     </span>
 
                     <span className="record-separator">·</span>
@@ -397,7 +454,10 @@ function ACUnits() {
               )}
             </div>
           );
-        })}
+              })}
+            </div>
+          </section>
+        ))}
       </div>
 
       {editingUnit && (
@@ -534,6 +594,61 @@ function ACUnits() {
       )}
     </div>
   );
+}
+
+function acUnitMatchesSearch(unit, customers, query) {
+  return recordMatchesSearch(unit, customers, query, [
+    "AC_ID",
+    "Customer_ID",
+    "AC_Model",
+    "Serial_Number",
+    "Quantity",
+    "Price",
+    "Purchase_Date",
+    "Sales_Channel",
+    "Warranty_Start_Date",
+    "Warranty_End_Date",
+    "Warranty_Status",
+  ]);
+}
+
+function getACUnitCustomerGroups(acUnits, customers) {
+  const groupMap = new Map();
+
+  acUnits.forEach((unit) => {
+    const customerId = unit.Customer_ID || "-";
+    const customerName = getRecordCustomerName(unit, customers);
+    const key = String(customerId).trim() || "unknown-customer";
+
+    if (!groupMap.has(key)) {
+      groupMap.set(key, {
+        key,
+        title: formatCustomerDisplay(customerId, customerName),
+        description: "",
+        acUnits: [],
+        statusCounts: {
+          active: 0,
+          expired: 0,
+          cancelled: 0,
+        },
+      });
+    }
+
+    const group = groupMap.get(key);
+    group.acUnits.push(unit);
+
+    const status = String(unit.Warranty_Status || "").toLowerCase().trim();
+    if (group.statusCounts[status] !== undefined) {
+      group.statusCounts[status] += 1;
+    }
+  });
+
+  return Array.from(groupMap.values()).map((group) => ({
+    ...group,
+    description: `${group.acUnits.length} AC unit${
+      group.acUnits.length === 1 ? "" : "s"
+    } for this customer`,
+  }));
 }
 
 function getFilterTitle(filter) {

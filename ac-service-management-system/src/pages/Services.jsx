@@ -9,6 +9,7 @@ import {
   formatCustomerDisplay,
   getRecordCustomerName,
 } from "../utils/customerDisplay";
+import { recordMatchesSearch } from "../utils/recordSearch";
 
 function Services() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -19,9 +20,11 @@ function Services() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sendingReminderId, setSendingReminderId] = useState("");
+  const [markingCompletedId, setMarkingCompletedId] = useState("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedId, setExpandedId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [editingService, setEditingService] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -74,6 +77,8 @@ function Services() {
     const status = String(service.Service_Status || "").toLowerCase();
     const type = String(service.Service_Type || "").toLowerCase();
 
+    if (!serviceMatchesSearch(service, customers, searchQuery)) return false;
+
     if (activeFilter === "due-this-month") {
       return (
         isCurrentMonth(service.Service_Date) &&
@@ -114,7 +119,7 @@ function Services() {
 
     return true;
   });
-  const serviceStatusSections = getServiceStatusSections(filteredServices);
+  const serviceCustomerGroups = getCustomerServiceGroups(filteredServices, customers);
 
   function toggleExpand(serviceId) {
     setExpandedId((prev) => (prev === serviceId ? null : serviceId));
@@ -211,6 +216,27 @@ function Services() {
       setError(error.message);
     } finally {
       setSendingReminderId("");
+    }
+  }
+
+  async function handleMarkCompleted(service, event) {
+    event.stopPropagation();
+
+    try {
+      setMarkingCompletedId(service.Service_ID);
+      setError("");
+      setSuccessMessage("");
+
+      await updateRecord("services", "Service_ID", service.Service_ID, {
+        Service_Status: "Completed",
+      });
+
+      setSuccessMessage("Service marked as completed successfully.");
+      await loadServices();
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setMarkingCompletedId("");
     }
   }
 
@@ -326,7 +352,21 @@ function Services() {
         </div>
       </div>
 
-      <div className="service-status-groups">
+      <div className="record-search-panel">
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search services by customer, AC, ID, status, technician..."
+        />
+        {searchQuery && (
+          <button type="button" onClick={() => setSearchQuery("")}>
+            Clear
+          </button>
+        )}
+      </div>
+
+      <div className="service-customer-groups">
         {filteredServices.length === 0 && (
           <div className="empty-list-card">
             <p>No service records found for this filter.</p>
@@ -339,26 +379,45 @@ function Services() {
           </div>
         )}
 
-        {serviceStatusSections.map((section) => (
-          <section key={section.key} className={`service-status-section ${section.key}`}>
-            <div className="service-status-section-header">
+        {serviceCustomerGroups.map((section) => (
+          <section key={section.key} className="service-customer-card">
+            <div className="service-customer-card-header">
               <div>
                 <h3>{section.title}</h3>
                 <p>{section.description}</p>
               </div>
-              <span className={`status-badge ${section.badgeClass}`}>
-                {section.services.length}
-              </span>
+              <div className="service-customer-status-counts">
+                {section.statusCounts.pending > 0 && (
+                  <span className="status-badge status-expired">
+                    {section.statusCounts.pending} Pending
+                  </span>
+                )}
+                {section.statusCounts.rescheduled > 0 && (
+                  <span className="status-badge status-info">
+                    {section.statusCounts.rescheduled} Rescheduled
+                  </span>
+                )}
+                {section.statusCounts.completed > 0 && (
+                  <span className="status-badge status-active">
+                    {section.statusCounts.completed} Completed
+                  </span>
+                )}
+                {section.statusCounts.cancelled > 0 && (
+                  <span className="status-badge status-cancelled">
+                    {section.statusCounts.cancelled} Cancelled
+                  </span>
+                )}
+              </div>
             </div>
 
-            <div className="record-list">
+            <div className="service-customer-service-list">
               {section.services.map((service, index) => {
                 const id = service.Service_ID || `${section.key}-${index}`;
                 const isExpanded = expandedId === id;
                 const customerName = getRecordCustomerName(service, customers);
 
           return (
-            <div key={id} className="record-card">
+            <div key={id} className="service-row-card">
               <div
                 className="record-card-main"
                 onClick={() => toggleExpand(id)}
@@ -439,6 +498,20 @@ function Services() {
                   className="record-actions"
                   onClick={(event) => event.stopPropagation()}
                 >
+                  {["pending", "rescheduled"].includes(
+                    String(service.Service_Status || "").toLowerCase()
+                  ) && (
+                    <button
+                      className="mark-completed-btn"
+                      onClick={(event) => handleMarkCompleted(service, event)}
+                      disabled={markingCompletedId === service.Service_ID}
+                    >
+                      {markingCompletedId === service.Service_ID
+                        ? "Updating..."
+                        : "Mark Completed"}
+                    </button>
+                  )}
+
                   <button
                     className="reminder-btn"
                     onClick={(event) => handleSendReminder(service, event)}
@@ -678,57 +751,62 @@ function Services() {
   );
 }
 
-function getServiceStatusSections(services) {
-  const sections = [
-    {
-      key: "pending",
-      title: "Pending Services",
-      description: "Services waiting to be completed.",
-      badgeClass: "status-expired",
-      services: [],
-    },
-    {
-      key: "rescheduled",
-      title: "Rescheduled Services",
-      description: "Services moved to another date.",
-      badgeClass: "status-info",
-      services: [],
-    },
-    {
-      key: "completed",
-      title: "Completed Services",
-      description: "Services already finished.",
-      badgeClass: "status-active",
-      services: [],
-    },
-    {
-      key: "cancelled",
-      title: "Cancelled Services",
-      description: "Services that were cancelled.",
-      badgeClass: "status-cancelled",
-      services: [],
-    },
-    {
-      key: "other",
-      title: "Other Services",
-      description: "Services with another status.",
-      badgeClass: "status-neutral",
-      services: [],
-    },
-  ];
+function serviceMatchesSearch(service, customers, query) {
+  return recordMatchesSearch(service, customers, query, [
+    "Service_ID",
+    "Customer_ID",
+    "AC_ID",
+    "Service_Date",
+    "Service_Year",
+    "Service_No",
+    "Service_Type",
+    "Service_Category",
+    "Technician_Name",
+    "Service_Status",
+    "Payment_Required",
+    "Reminder_Status",
+    "Notes",
+  ]);
+}
 
-  const sectionByStatus = sections.reduce((map, section) => {
-    map[section.key] = section;
-    return map;
-  }, {});
+function getCustomerServiceGroups(services, customers) {
+  const groupMap = new Map();
 
   services.forEach((service) => {
+    const customerId = service.Customer_ID || "-";
+    const customerName = getRecordCustomerName(service, customers);
+    const key = String(customerId).trim() || "unknown-customer";
+
+    if (!groupMap.has(key)) {
+      groupMap.set(key, {
+        key,
+        title: formatCustomerDisplay(customerId, customerName),
+        description: "",
+        services: [],
+        statusCounts: {
+          pending: 0,
+          rescheduled: 0,
+          completed: 0,
+          cancelled: 0,
+        },
+      });
+    }
+
+    const group = groupMap.get(key);
+    group.services.push(service);
+
     const status = String(service.Service_Status || "").toLowerCase().trim();
-    const section = sectionByStatus[status] || sectionByStatus.other;
-    section.services.push(service);
+    if (group.statusCounts[status] !== undefined) {
+      group.statusCounts[status] += 1;
+    }
   });
 
-  return sections.filter((section) => section.services.length > 0);
+  return Array.from(groupMap.values()).map((group) => ({
+    ...group,
+    description: `${group.services.length} service${
+      group.services.length === 1 ? "" : "s"
+    } for this customer`,
+  }));
 }
 
 function getFilterTitle(filter) {

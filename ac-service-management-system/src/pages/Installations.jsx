@@ -4,6 +4,7 @@ import {
   formatCustomerDisplay,
   getRecordCustomerName,
 } from "../utils/customerDisplay";
+import { recordMatchesSearch } from "../utils/recordSearch";
 
 function Installations() {
   const [installations, setInstallations] = useState([]);
@@ -13,6 +14,7 @@ function Installations() {
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedId, setExpandedId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [editingInstallation, setEditingInstallation] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -100,6 +102,14 @@ function Installations() {
   if (loading) return <p>Loading installations...</p>;
   if (error) return <p className="error-text">Error: {error}</p>;
 
+  const filteredInstallations = installations.filter((installation) =>
+    installationMatchesSearch(installation, customers, searchQuery)
+  );
+  const installationCustomerGroups = getInstallationCustomerGroups(
+    filteredInstallations,
+    customers
+  );
+
   return (
     <div>
       <div className="page-header">
@@ -109,16 +119,57 @@ function Installations() {
 
       {successMessage && <p className="success-text">{successMessage}</p>}
 
-      <div className="record-list">
-        {installations.length === 0 && <p className="empty-list">No installation records found.</p>}
+      <div className="record-search-panel">
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search installations by customer, AC, ID, status, technician..."
+        />
+        {searchQuery && (
+          <button type="button" onClick={() => setSearchQuery("")}>
+            Clear
+          </button>
+        )}
+      </div>
 
-        {installations.map((installation, index) => {
-          const id = installation.Installation_ID || index;
+      <div className="customer-record-groups">
+        {filteredInstallations.length === 0 && <p className="empty-list">No installation records found.</p>}
+
+        {installationCustomerGroups.map((group) => (
+          <section key={group.key} className="customer-record-card">
+            <div className="customer-record-card-header">
+              <div>
+                <h3>{group.title}</h3>
+                <p>{group.description}</p>
+              </div>
+              <div className="customer-record-status-counts">
+                {group.statusCounts.pending > 0 && (
+                  <span className="status-badge status-expired">
+                    {group.statusCounts.pending} Pending
+                  </span>
+                )}
+                {group.statusCounts.completed > 0 && (
+                  <span className="status-badge status-active">
+                    {group.statusCounts.completed} Completed
+                  </span>
+                )}
+                {group.statusCounts.cancelled > 0 && (
+                  <span className="status-badge status-cancelled">
+                    {group.statusCounts.cancelled} Cancelled
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="customer-record-list">
+              {group.installations.map((installation, index) => {
+          const id = installation.Installation_ID || `${group.key}-${index}`;
           const isExpanded = expandedId === id;
           const customerName = getRecordCustomerName(installation, customers);
 
           return (
-            <div key={id} className="record-card">
+            <div key={id} className="customer-record-row">
               <div className="record-card-main" onClick={() => toggleExpand(id)}>
                 <span className="record-id-badge">{installation.Installation_ID || "—"}</span>
 
@@ -190,7 +241,10 @@ function Installations() {
               )}
             </div>
           );
-        })}
+              })}
+            </div>
+          </section>
+        ))}
       </div>
 
       {editingInstallation && (
@@ -247,6 +301,59 @@ function Installations() {
       )}
     </div>
   );
+}
+
+function installationMatchesSearch(installation, customers, query) {
+  return recordMatchesSearch(installation, customers, query, [
+    "Installation_ID",
+    "Customer_ID",
+    "AC_ID",
+    "Installation_Date",
+    "Installation_Type",
+    "Technician_Name",
+    "Outsource_Payment",
+    "Installation_Status",
+    "Notes",
+  ]);
+}
+
+function getInstallationCustomerGroups(installations, customers) {
+  const groupMap = new Map();
+
+  installations.forEach((installation) => {
+    const customerId = installation.Customer_ID || "-";
+    const customerName = getRecordCustomerName(installation, customers);
+    const key = String(customerId).trim() || "unknown-customer";
+
+    if (!groupMap.has(key)) {
+      groupMap.set(key, {
+        key,
+        title: formatCustomerDisplay(customerId, customerName),
+        description: "",
+        installations: [],
+        statusCounts: {
+          pending: 0,
+          completed: 0,
+          cancelled: 0,
+        },
+      });
+    }
+
+    const group = groupMap.get(key);
+    group.installations.push(installation);
+
+    const status = String(installation.Installation_Status || "").toLowerCase().trim();
+    if (group.statusCounts[status] !== undefined) {
+      group.statusCounts[status] += 1;
+    }
+  });
+
+  return Array.from(groupMap.values()).map((group) => ({
+    ...group,
+    description: `${group.installations.length} installation${
+      group.installations.length === 1 ? "" : "s"
+    } for this customer`,
+  }));
 }
 
 function formatDate(value) {
