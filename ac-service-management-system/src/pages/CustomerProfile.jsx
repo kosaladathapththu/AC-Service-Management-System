@@ -271,7 +271,12 @@ function CustomerProfile() {
                     {evidence.hasEvidence && <span className="status-badge status-info">Evidence</span>}
                   </div>
 
-                  {evidence.hasEvidence && <PaymentEvidence evidence={evidence} />}
+                  {evidence.hasEvidence && (
+                    <div className="profile-payment-evidence">
+                      <strong>Payment Evidence</strong>
+                      <PaymentEvidence evidence={evidence} />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

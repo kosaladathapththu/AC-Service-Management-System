@@ -29,9 +29,26 @@ function PaymentEvidence({ evidence }) {
 
       <div className="payment-evidence-actions">
         {evidence.openUrl && (
-          <a href={evidence.openUrl} target="_blank" rel="noreferrer">
-            Open Evidence
-          </a>
+          <>
+            <a
+              className="payment-evidence-view-btn"
+              href={evidence.openUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              View Evidence
+            </a>
+
+            <a
+              className="payment-evidence-url"
+              href={evidence.openUrl}
+              target="_blank"
+              rel="noreferrer"
+              title={evidence.displayUrl || evidence.openUrl}
+            >
+              {evidence.displayUrl || evidence.openUrl}
+            </a>
+          </>
         )}
 
         {evidence.downloadUrl && (
@@ -41,7 +58,9 @@ function PaymentEvidence({ evidence }) {
         )}
 
         {!evidence.openUrl && !evidence.downloadUrl && evidence.fileName && (
-          <span>{evidence.fileName}</span>
+          <span>
+            Evidence saved, but Google Drive link is missing: {evidence.fileName}
+          </span>
         )}
       </div>
     </div>

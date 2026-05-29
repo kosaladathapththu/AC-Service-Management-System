@@ -67,16 +67,17 @@ export function getPaymentEvidence(payment) {
   ]);
 
   const openUrl = dataUrl || getOpenEvidenceUrl(rawLink) || "";
-  const previewFallbackUrl = getImagePreviewFallbackUrl(rawLink || dataUrl || fileName);
+  const previewFallbackUrl = getImagePreviewFallbackUrl(rawLink || dataUrl);
   const isDataImage = String(dataUrl).startsWith("data:image");
   const previewUrl = isDataImage
     ? dataUrl
-    : getImagePreviewUrl(rawLink || dataUrl || fileName);
+    : getImagePreviewUrl(rawLink || dataUrl);
 
   return {
-    hasEvidence: Boolean(rawLink || dataUrl || base64Data || fileName),
-    fileName,
+    hasEvidence: Boolean(rawLinkValue || rawLink || dataUrl || base64Data || fileName),
+    fileName: fileName || (!rawLink && rawLinkValue ? rawLinkValue : ""),
     openUrl,
+    displayUrl: rawLink || openUrl || rawLinkValue,
     previewUrl,
     previewFallbackUrl,
     downloadUrl:
@@ -138,7 +139,7 @@ function getOpenEvidenceUrl(value) {
     return `https://drive.google.com/file/d/${driveFileId}/view?usp=sharing`;
   }
 
-  return text;
+  return "";
 }
 
 function extractEvidenceUrl(value) {
@@ -151,7 +152,7 @@ function extractEvidenceUrl(value) {
   const urlMatch = text.match(/https?:\/\/[^\s,}]+/i);
   if (urlMatch) return urlMatch[0];
 
-  return text;
+  return "";
 }
 
 function getGoogleDriveFileId(link) {

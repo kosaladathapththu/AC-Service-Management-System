@@ -110,7 +110,12 @@ function CustomerProfileModal({ profile, onClose }) {
                 >
                   {item.Payment_Status || "-"}
                 </span>
-                {evidence.hasEvidence && <PaymentEvidence evidence={evidence} />}
+                {evidence.hasEvidence && (
+                  <div className="profile-payment-evidence">
+                    <strong>Payment Evidence</strong>
+                    <PaymentEvidence evidence={evidence} />
+                  </div>
+                )}
               </MiniRecord>
             );
           })}

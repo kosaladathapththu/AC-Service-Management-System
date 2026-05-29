@@ -2265,6 +2265,20 @@ button.view-link:disabled {
   min-width: 0;
 }
 
+.profile-payment-evidence {
+  flex-basis: 100%;
+  display: grid;
+  gap: 6px;
+  margin-top: 6px;
+  min-width: 0;
+}
+
+.profile-payment-evidence > strong {
+  color: #6b7280;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
 /* Better horizontal scrollbar */
 .dashboard-page .reminder-section::-webkit-scrollbar {
   height: 8px;
@@ -2928,6 +2942,24 @@ button.view-link:disabled {
 
 .payment-evidence-actions a:hover {
   text-decoration: underline;
+}
+
+.payment-evidence-view-btn {
+  align-self: flex-start;
+  background: #2563EB;
+  border-radius: 7px;
+  color: #FFFFFF !important;
+  padding: 8px 12px;
+}
+
+.payment-evidence-view-btn:hover {
+  background: #1D4ED8;
+  text-decoration: none !important;
+}
+
+.payment-evidence-url {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* ── Reminder button overrides for card layout ── */

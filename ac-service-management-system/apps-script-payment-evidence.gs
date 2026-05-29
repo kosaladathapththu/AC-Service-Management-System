@@ -41,7 +41,7 @@ function savePaymentEvidenceToDrive(paymentData, paymentId) {
 
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
-  return file.getUrl();
+  return `https://drive.google.com/file/d/${file.getId()}/view?usp=sharing`;
 }
 
 function applyPaymentEvidenceField(paymentData, paymentId) {

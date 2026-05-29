@@ -330,7 +330,12 @@ function CustomerProfileModal({ profile, onClose }) {
                 <span className={`status-badge ${getPaymentStatusClass(item.Payment_Status)}`}>
                   {item.Payment_Status || "-"}
                 </span>
-                {evidence.hasEvidence && <PaymentEvidence evidence={evidence} />}
+                {evidence.hasEvidence && (
+                  <div className="profile-payment-evidence">
+                    <strong>Payment Evidence</strong>
+                    <PaymentEvidence evidence={evidence} />
+                  </div>
+                )}
               </MiniRecord>
             );
           })}
@@ -427,6 +432,7 @@ function ReminderSection({ title, description, type, data = [] }) {
                 <th>Type</th>
                 <th>Status</th>
                 <th>Due Date</th>
+                <th>Evidence</th>
                 <th>Profile</th>
               </tr>
             )}
@@ -480,6 +486,8 @@ function ReminderSection({ title, description, type, data = [] }) {
               }
 
               if (type === "payment") {
+                const evidence = getPaymentEvidence(item);
+
                 return (
                   <tr key={item.Payment_ID || index}>
                     <td>{item.Payment_ID || "-"}</td>
@@ -500,6 +508,20 @@ function ReminderSection({ title, description, type, data = [] }) {
                       </span>
                     </td>
                     <td>{formatDate(item.Due_Date)}</td>
+                    <td>
+                      {evidence.openUrl ? (
+                        <a
+                          className="view-link"
+                          href={evidence.openUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          View
+                        </a>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
                     <td>
                       <Link
                         className="view-link"
