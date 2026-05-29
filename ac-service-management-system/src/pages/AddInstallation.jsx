@@ -128,7 +128,8 @@ function AddInstallation() {
 
   function selectCustomerById(customerId) {
     const selectedCustomer = customersWithUninstalledACUnits.find(
-      (customer) => String(getCustomerId(customer)) === String(customerId)
+      (customer) =>
+        normalizeValue(getCustomerId(customer)) === normalizeValue(customerId)
     );
 
     selectCustomer(selectedCustomer, customerId);
@@ -160,6 +161,15 @@ function AddInstallation() {
     customerSearch,
     getCustomerId,
     getCustomerName
+  );
+  const selectedCustomer = customersWithUninstalledACUnits.find(
+    (customer) =>
+      normalizeValue(getCustomerId(customer)) ===
+      normalizeValue(formData.Customer_ID)
+  );
+  const customerOptions = getCustomerOptions(
+    filteredCustomersWithUninstalledACUnits,
+    selectedCustomer
   );
 
   if (loadingData) {
@@ -234,7 +244,7 @@ function AddInstallation() {
                 required
               >
                 <option value="">— Select a customer —</option>
-                {filteredCustomersWithUninstalledACUnits.map((customer, index) => {
+                {customerOptions.map((customer, index) => {
                   const id = getCustomerId(customer);
 
                   return (
@@ -458,6 +468,23 @@ function isACUnitAlreadyInInstallation(acId, installations) {
 
 function normalizeValue(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+function getCustomerOptions(filteredCustomers, selectedCustomer) {
+  if (!selectedCustomer) return filteredCustomers;
+
+  const selectedId = normalizeValue(
+    selectedCustomer.Customer_ID || selectedCustomer.customer_ID || selectedCustomer.id
+  );
+  const hasSelectedCustomer = filteredCustomers.some(
+    (customer) =>
+      normalizeValue(customer.Customer_ID || customer.customer_ID || customer.id) ===
+      selectedId
+  );
+
+  return hasSelectedCustomer
+    ? filteredCustomers
+    : [selectedCustomer, ...filteredCustomers];
 }
 
 export default AddInstallation;
