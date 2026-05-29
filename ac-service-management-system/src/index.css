@@ -864,6 +864,58 @@ button.view-link:disabled {
   color: #16A34A;
 }
 
+.customer-search-select {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.customer-search-results {
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  background: #FFFFFF;
+  max-height: 240px;
+  overflow-y: auto;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.customer-search-results button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.customer-search-results button:last-child {
+  border-bottom: none;
+}
+
+.customer-search-results button:hover {
+  background: #F9FAFB;
+}
+
+.customer-search-results strong {
+  color: #111827;
+  font-size: 13px;
+}
+
+.customer-search-results span,
+.customer-search-results p {
+  color: #6B7280;
+  font-size: 12px;
+}
+
+.customer-search-results p {
+  margin: 0;
+  padding: 10px 12px;
+}
+
 /* ============================================
    CUSTOMER PROFILE
    ============================================ */

@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { addPayment, getAllData } from "../api/googleSheetApi";
+import CustomerSearchSelect, {
+  getFilteredCustomers,
+} from "../components/CustomerSearchSelect";
 import { cachePaymentEvidence } from "../utils/paymentEvidenceStore";
 import {
   getPurchasedAnnualServiceYears,
@@ -33,6 +36,7 @@ function AddPayment() {
   const [filteredACUnits, setFilteredACUnits] = useState([]);
 
   const [formData, setFormData] = useState(emptyForm);
+  const [customerSearch, setCustomerSearch] = useState("");
 
   const [loadingData, setLoadingData] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -68,17 +72,7 @@ function AddPayment() {
     const { name, value } = event.target;
 
     if (name === "Customer_ID") {
-      const customerACUnits = acUnits.filter(
-        (unit) => String(unit.Customer_ID).trim() === String(value).trim()
-      );
-
-      setFilteredACUnits(customerACUnits);
-
-      setFormData((previousData) => ({
-        ...previousData,
-        Customer_ID: value,
-        AC_ID: "",
-      }));
+      selectCustomerById(value);
 
       return;
     }
@@ -177,6 +171,7 @@ function AddPayment() {
 
       setFormData(emptyForm);
       setFilteredACUnits([]);
+      setCustomerSearch("");
     } catch (error) {
       setError(error.message);
     } finally {
@@ -192,12 +187,44 @@ function AddPayment() {
     return customer.Customer_ID || customer.customer_ID || customer.id || "";
   }
 
+  function selectCustomerById(customerId) {
+    const selectedCustomer = customers.find(
+      (customer) => String(getCustomerId(customer)) === String(customerId)
+    );
+
+    selectCustomer(selectedCustomer, customerId);
+  }
+
+  function selectCustomer(customer, customerId = getCustomerId(customer || {})) {
+    const customerACUnits = acUnits.filter(
+      (unit) => String(unit.Customer_ID).trim() === String(customerId).trim()
+    );
+
+    setFilteredACUnits(customerACUnits);
+
+    setFormData((previousData) => ({
+      ...previousData,
+      Customer_ID: customerId,
+      AC_ID: "",
+    }));
+
+    if (customer) {
+      setCustomerSearch(`${customerId} - ${getCustomerName(customer)}`);
+    }
+  }
+
   const purchasedAnnualYears = getPurchasedAnnualServiceYears(
     payments,
     formData.Customer_ID,
     formData.AC_ID
   );
   const duplicateAnnualYear = hasAnnualServicePaymentForYear(payments, formData);
+  const filteredCustomers = getFilteredCustomers(
+    customers,
+    customerSearch,
+    getCustomerId,
+    getCustomerName
+  );
 
   if (loadingData) {
     return <p>Loading form data...</p>;
@@ -218,6 +245,19 @@ function AddPayment() {
           <h3>Linked Customer & AC Unit</h3>
 
           <div className="form-grid">
+            <div className="form-group full-width">
+              <label>Search Customer</label>
+              <CustomerSearchSelect
+                customers={customers}
+                query={customerSearch}
+                onQueryChange={setCustomerSearch}
+                onSelectCustomer={selectCustomer}
+                getCustomerId={getCustomerId}
+                getCustomerName={getCustomerName}
+                disabled={loadingData}
+              />
+            </div>
+
             <div className="form-group">
               <label>Customer *</label>
               <select
@@ -228,7 +268,7 @@ function AddPayment() {
               >
                 <option value="">Select customer</option>
 
-                {customers.map((customer, index) => {
+                {filteredCustomers.map((customer, index) => {
                   const customerId = getCustomerId(customer);
 
                   return (

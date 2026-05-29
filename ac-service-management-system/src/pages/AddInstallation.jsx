@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { addInstallation, getAllData } from "../api/googleSheetApi";
+import CustomerSearchSelect, {
+  getFilteredCustomers,
+} from "../components/CustomerSearchSelect";
 
 function AddInstallation() {
   const today = new Date().toISOString().split("T")[0];
@@ -21,6 +24,7 @@ function AddInstallation() {
   const [acUnits, setAcUnits] = useState([]);
   const [installations, setInstallations] = useState([]);
   const [filteredACUnits, setFilteredACUnits] = useState([]);
+  const [customerSearch, setCustomerSearch] = useState("");
 
   const [formData, setFormData] = useState(emptyForm);
 
@@ -58,15 +62,7 @@ function AddInstallation() {
     const { name, value } = event.target;
 
     if (name === "Customer_ID") {
-      const customerACUnits = getUninstalledACUnits(
-        acUnits,
-        installations
-      ).filter(
-        (unit) => normalizeValue(unit.Customer_ID) === normalizeValue(value)
-      );
-
-      setFilteredACUnits(customerACUnits);
-      setFormData((prev) => ({ ...prev, Customer_ID: value, AC_ID: "" }));
+      selectCustomerById(value);
       return;
     }
 
@@ -106,6 +102,7 @@ function AddInstallation() {
 
       setFormData(emptyForm);
       setFilteredACUnits([]);
+      setCustomerSearch("");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -116,6 +113,7 @@ function AddInstallation() {
   function handleReset() {
     setFormData(emptyForm);
     setFilteredACUnits([]);
+    setCustomerSearch("");
     setSuccessMessage("");
     setError("");
   }
@@ -128,6 +126,27 @@ function AddInstallation() {
     return customer.Customer_ID || customer.customer_ID || customer.id || "";
   }
 
+  function selectCustomerById(customerId) {
+    const selectedCustomer = customersWithUninstalledACUnits.find(
+      (customer) => String(getCustomerId(customer)) === String(customerId)
+    );
+
+    selectCustomer(selectedCustomer, customerId);
+  }
+
+  function selectCustomer(customer, customerId = getCustomerId(customer || {})) {
+    const customerACUnits = getUninstalledACUnits(acUnits, installations).filter(
+      (unit) => normalizeValue(unit.Customer_ID) === normalizeValue(customerId)
+    );
+
+    setFilteredACUnits(customerACUnits);
+    setFormData((prev) => ({ ...prev, Customer_ID: customerId, AC_ID: "" }));
+
+    if (customer) {
+      setCustomerSearch(`${customerId} - ${getCustomerName(customer)}`);
+    }
+  }
+
   const uninstalledACUnits = getUninstalledACUnits(acUnits, installations);
   const customersWithUninstalledACUnits = customers.filter((customer) => {
     const customerId = getCustomerId(customer);
@@ -136,6 +155,12 @@ function AddInstallation() {
       (unit) => normalizeValue(unit.Customer_ID) === normalizeValue(customerId)
     );
   });
+  const filteredCustomersWithUninstalledACUnits = getFilteredCustomers(
+    customersWithUninstalledACUnits,
+    customerSearch,
+    getCustomerId,
+    getCustomerName
+  );
 
   if (loadingData) {
     return (
@@ -185,6 +210,19 @@ function AddInstallation() {
           </div>
 
           <div className="form-grid">
+            <div className="form-group full-width">
+              <label>Search Customer</label>
+              <CustomerSearchSelect
+                customers={customersWithUninstalledACUnits}
+                query={customerSearch}
+                onQueryChange={setCustomerSearch}
+                onSelectCustomer={selectCustomer}
+                getCustomerId={getCustomerId}
+                getCustomerName={getCustomerName}
+                disabled={loadingData}
+              />
+            </div>
+
             <div className="form-group">
               <label>
                 Customer <span className="required">*</span>
@@ -196,7 +234,7 @@ function AddInstallation() {
                 required
               >
                 <option value="">— Select a customer —</option>
-                {customersWithUninstalledACUnits.map((customer, index) => {
+                {filteredCustomersWithUninstalledACUnits.map((customer, index) => {
                   const id = getCustomerId(customer);
 
                   return (

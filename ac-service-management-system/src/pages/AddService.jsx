@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { addService, getAllData } from "../api/googleSheetApi";
+import CustomerSearchSelect, {
+  getFilteredCustomers,
+} from "../components/CustomerSearchSelect";
 
 function AddService() {
   const today = new Date().toISOString().split("T")[0];
@@ -7,6 +10,7 @@ function AddService() {
   const [customers, setCustomers] = useState([]);
   const [acUnits, setAcUnits] = useState([]);
   const [filteredACUnits, setFilteredACUnits] = useState([]);
+  const [customerSearch, setCustomerSearch] = useState("");
 
   const [formData, setFormData] = useState({
     Customer_ID: "",
@@ -50,11 +54,7 @@ function AddService() {
     const { name, value } = event.target;
 
     if (name === "Customer_ID") {
-      const customerACUnits = acUnits.filter(
-        (unit) => String(unit.Customer_ID).trim() === String(value).trim()
-      );
-      setFilteredACUnits(customerACUnits);
-      setFormData((prev) => ({ ...prev, Customer_ID: value, AC_ID: "" }));
+      selectCustomerById(value);
       return;
     }
 
@@ -92,6 +92,7 @@ function AddService() {
         Notes: "",
       });
       setFilteredACUnits([]);
+      setCustomerSearch("");
     } catch (error) {
       setError(error.message);
     } finally {
@@ -107,6 +108,27 @@ function AddService() {
     return customer.Customer_ID || customer.customer_ID || customer.id || "";
   }
 
+  function selectCustomerById(customerId) {
+    const selectedCustomer = customers.find(
+      (customer) => String(getCustomerId(customer)) === String(customerId)
+    );
+
+    selectCustomer(selectedCustomer, customerId);
+  }
+
+  function selectCustomer(customer, customerId = getCustomerId(customer || {})) {
+    const customerACUnits = acUnits.filter(
+      (unit) => String(unit.Customer_ID).trim() === String(customerId).trim()
+    );
+
+    setFilteredACUnits(customerACUnits);
+    setFormData((prev) => ({ ...prev, Customer_ID: customerId, AC_ID: "" }));
+
+    if (customer) {
+      setCustomerSearch(`${customerId} - ${getCustomerName(customer)}`);
+    }
+  }
+
   if (loadingData) return <p>Loading form data...</p>;
 
   const selectedCustomer = customers.find(
@@ -114,6 +136,12 @@ function AddService() {
   );
   const selectedAC = filteredACUnits.find(
     (u) => String(u.AC_ID) === String(formData.AC_ID)
+  );
+  const filteredCustomers = getFilteredCustomers(
+    customers,
+    customerSearch,
+    getCustomerId,
+    getCustomerName
   );
 
   return (
@@ -136,11 +164,24 @@ function AddService() {
           </div>
 
           <div className="add-form-grid">
+            <div className="form-group full-width">
+              <label>Search Customer</label>
+              <CustomerSearchSelect
+                customers={customers}
+                query={customerSearch}
+                onQueryChange={setCustomerSearch}
+                onSelectCustomer={selectCustomer}
+                getCustomerId={getCustomerId}
+                getCustomerName={getCustomerName}
+                disabled={loadingData}
+              />
+            </div>
+
             <div className="form-group">
               <label>Customer <span className="required">*</span></label>
               <select name="Customer_ID" value={formData.Customer_ID} onChange={handleChange} required>
                 <option value="">Select customer</option>
-                {customers.map((customer, index) => {
+                {filteredCustomers.map((customer, index) => {
                   const cid = getCustomerId(customer);
                   return (
                     <option key={cid || index} value={cid}>

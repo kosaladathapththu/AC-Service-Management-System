@@ -5,6 +5,9 @@ import {
   checkDuplicateCustomer,
   getAllData,
 } from "../api/googleSheetApi";
+import CustomerSearchSelect, {
+  getFilteredCustomers,
+} from "../components/CustomerSearchSelect";
 
 function AddSale() {
   const today = new Date().toISOString().split("T")[0];
@@ -90,9 +93,13 @@ function AddSale() {
       (customer) => String(customer.Customer_ID) === String(customerId)
     );
 
+    selectExistingCustomer(selectedCustomer, customerId);
+  }
+
+  function selectExistingCustomer(selectedCustomer, customerId) {
     setFormData((prev) => ({
       ...prev,
-      Customer_ID: customerId,
+      Customer_ID: customerId || selectedCustomer?.Customer_ID || "",
       Customer_Name: selectedCustomer?.Customer_Name || "",
       Phone: selectedCustomer?.Phone || "",
       Email: selectedCustomer?.Email || "",
@@ -105,6 +112,11 @@ function AddSale() {
       Notes: selectedCustomer?.Notes || "",
     }));
     latestPhoneRef.current = selectedCustomer?.Phone || "";
+    if (selectedCustomer) {
+      setCustomerSearch(
+        `${selectedCustomer.Customer_ID} - ${selectedCustomer.Customer_Name || ""}`
+      );
+    }
   }
 
   function handleChange(event) {
@@ -252,8 +264,11 @@ function AddSale() {
     return normalizeDuplicateCustomer(apiDuplicate);
   }
 
-  const filteredCustomers = customers.filter((customer) =>
-    customerMatchesSearch(customer, customerSearch)
+  const filteredCustomers = getFilteredCustomers(
+    customers,
+    customerSearch,
+    getCustomerIdForSearch,
+    getCustomerNameForSearch
   );
 
   return (
@@ -364,18 +379,17 @@ function AddSale() {
             <div className="form-grid">
               <div className="form-group full-width">
                 <label>Search Customer</label>
-                <input
-                  type="search"
-                  value={customerSearch}
-                  onChange={(event) => setCustomerSearch(event.target.value)}
-                  placeholder="Search by customer ID, name, phone, email, or address"
+                <CustomerSearchSelect
+                  customers={customers}
+                  query={customerSearch}
+                  onQueryChange={setCustomerSearch}
+                  onSelectCustomer={(customer) =>
+                    selectExistingCustomer(customer, getCustomerIdForSearch(customer))
+                  }
+                  getCustomerId={getCustomerIdForSearch}
+                  getCustomerName={getCustomerNameForSearch}
                   disabled={loadingCustomers}
                 />
-                <span className="form-hint">
-                  {loadingCustomers
-                    ? "Loading customers..."
-                    : `${filteredCustomers.length} matching customer(s)`}
-                </span>
               </div>
 
               <div className="form-group full-width">
@@ -406,11 +420,6 @@ function AddSale() {
                     </option>
                   ))}
                 </select>
-                {customerSearch && filteredCustomers.length === 0 && (
-                  <span className="form-hint form-hint-error">
-                    No customer found for this search.
-                  </span>
-                )}
               </div>
 
               {formData.Customer_ID && (
@@ -674,20 +683,6 @@ function findCustomerByPhone(customers, phone) {
   );
 }
 
-function customerMatchesSearch(customer, query) {
-  const cleanQuery = String(query || "").trim().toLowerCase();
-
-  if (!cleanQuery) return true;
-
-  return [
-    customer.Customer_ID,
-    customer.Customer_Name,
-    customer.Phone,
-    customer.Email,
-    customer.Address,
-  ].some((value) => String(value || "").toLowerCase().includes(cleanQuery));
-}
-
 function PhoneCheckHint({ status }) {
   if (status === "checking") {
     return (
@@ -754,6 +749,14 @@ function normalizeDuplicateCustomer(value) {
 
 function getDuplicateCustomerMessage(customer) {
   return `Customer already exists with this phone number. Use existing customer ${customer.Customer_ID} instead.`;
+}
+
+function getCustomerIdForSearch(customer) {
+  return customer.Customer_ID || customer.customer_ID || customer.id || "";
+}
+
+function getCustomerNameForSearch(customer) {
+  return customer.Customer_Name || customer.name || "Unnamed Customer";
 }
 
 export default AddSale;
