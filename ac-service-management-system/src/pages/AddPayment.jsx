@@ -189,7 +189,8 @@ function AddPayment() {
 
   function selectCustomerById(customerId) {
     const selectedCustomer = customers.find(
-      (customer) => String(getCustomerId(customer)) === String(customerId)
+      (customer) =>
+        normalizeValue(getCustomerId(customer)) === normalizeValue(customerId)
     );
 
     selectCustomer(selectedCustomer, customerId);
@@ -197,7 +198,7 @@ function AddPayment() {
 
   function selectCustomer(customer, customerId = getCustomerId(customer || {})) {
     const customerACUnits = acUnits.filter(
-      (unit) => String(unit.Customer_ID).trim() === String(customerId).trim()
+      (unit) => normalizeValue(unit.Customer_ID) === normalizeValue(customerId)
     );
 
     setFilteredACUnits(customerACUnits);
@@ -225,6 +226,12 @@ function AddPayment() {
     getCustomerId,
     getCustomerName
   );
+  const selectedCustomer = customers.find(
+    (customer) =>
+      normalizeValue(getCustomerId(customer)) ===
+      normalizeValue(formData.Customer_ID)
+  );
+  const customerOptions = getCustomerOptions(filteredCustomers, selectedCustomer);
 
   if (loadingData) {
     return <p>Loading form data...</p>;
@@ -268,7 +275,7 @@ function AddPayment() {
               >
                 <option value="">Select customer</option>
 
-                {filteredCustomers.map((customer, index) => {
+                {customerOptions.map((customer, index) => {
                   const customerId = getCustomerId(customer);
 
                   return (
@@ -532,6 +539,27 @@ function getServicePreviewText(count) {
   if (String(count) === "4") return "+3 months, +6 months, +9 months, +12 months";
 
   return "+4 months, +8 months, +12 months";
+}
+
+function getCustomerOptions(filteredCustomers, selectedCustomer) {
+  if (!selectedCustomer) return filteredCustomers;
+
+  const selectedId = normalizeValue(
+    selectedCustomer.Customer_ID || selectedCustomer.customer_ID || selectedCustomer.id
+  );
+  const hasSelectedCustomer = filteredCustomers.some(
+    (customer) =>
+      normalizeValue(customer.Customer_ID || customer.customer_ID || customer.id) ===
+      selectedId
+  );
+
+  return hasSelectedCustomer
+    ? filteredCustomers
+    : [selectedCustomer, ...filteredCustomers];
+}
+
+function normalizeValue(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
 export default AddPayment;

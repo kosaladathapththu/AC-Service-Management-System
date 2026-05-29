@@ -90,7 +90,9 @@ function AddSale() {
   function handleCustomerSelect(event) {
     const customerId = event.target.value;
     const selectedCustomer = customers.find(
-      (customer) => String(customer.Customer_ID) === String(customerId)
+      (customer) =>
+        normalizeText(getCustomerIdForSearch(customer)) ===
+        normalizeText(customerId)
     );
 
     selectExistingCustomer(selectedCustomer, customerId);
@@ -270,6 +272,12 @@ function AddSale() {
     getCustomerIdForSearch,
     getCustomerNameForSearch
   );
+  const selectedCustomer = customers.find(
+    (customer) =>
+      normalizeText(getCustomerIdForSearch(customer)) ===
+      normalizeText(formData.Customer_ID)
+  );
+  const customerOptions = getCustomerOptions(filteredCustomers, selectedCustomer);
 
   return (
     <div>
@@ -408,7 +416,7 @@ function AddSale() {
                       : "Select customer"}
                   </option>
 
-                  {filteredCustomers.map((customer) => {
+                  {customerOptions.map((customer) => {
                     const customerId = getCustomerIdForSearch(customer);
 
                     return (
@@ -759,6 +767,23 @@ function getCustomerIdForSearch(customer) {
 
 function getCustomerNameForSearch(customer) {
   return customer.Customer_Name || customer.name || "Unnamed Customer";
+}
+
+function getCustomerOptions(filteredCustomers, selectedCustomer) {
+  if (!selectedCustomer) return filteredCustomers;
+
+  const selectedId = normalizeText(getCustomerIdForSearch(selectedCustomer));
+  const hasSelectedCustomer = filteredCustomers.some(
+    (customer) => normalizeText(getCustomerIdForSearch(customer)) === selectedId
+  );
+
+  return hasSelectedCustomer
+    ? filteredCustomers
+    : [selectedCustomer, ...filteredCustomers];
+}
+
+function normalizeText(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
 export default AddSale;
