@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   addSale,
@@ -41,6 +41,8 @@ function AddSale() {
 
   const [checkingDuplicate, setCheckingDuplicate] = useState(false);
   const [duplicateFound, setDuplicateFound] = useState(null);
+  const [duplicateCheckStatus, setDuplicateCheckStatus] = useState("idle");
+  const latestPhoneRef = useRef("");
 
   useEffect(() => {
     loadCustomers();
@@ -63,6 +65,8 @@ function AddSale() {
     setSuccessMessage("");
     setError("");
     setDuplicateFound(null);
+    setDuplicateCheckStatus("idle");
+    latestPhoneRef.current = "";
 
     setFormData((prev) => ({
       ...emptyForm,
@@ -98,6 +102,7 @@ function AddSale() {
       Created_Date: selectedCustomer?.Created_Date || today,
       Notes: selectedCustomer?.Notes || "",
     }));
+    latestPhoneRef.current = selectedCustomer?.Phone || "";
   }
 
   function handleChange(event) {
@@ -105,6 +110,7 @@ function AddSale() {
     setFormData((prev) => ({ ...prev, [name]: value }));
 
     if (name === "Phone" && saleMode === "new") {
+      latestPhoneRef.current = value;
       checkForDuplicate(value);
     }
   }
@@ -114,23 +120,46 @@ function AddSale() {
 
     if (cleanPhone.length < 7) {
       setDuplicateFound(null);
+      setDuplicateCheckStatus("idle");
+      setError("");
       return;
     }
 
     try {
       setCheckingDuplicate(true);
+      setDuplicateCheckStatus("checking");
+      setError("");
       const foundCustomer = findCustomerByPhone(customers, phone);
+
+      if (!isLatestPhone(phone, latestPhoneRef.current)) return;
 
       if (foundCustomer) {
         setDuplicateFound(foundCustomer);
+        setDuplicateCheckStatus("existing");
+        setError(getDuplicateCustomerMessage(foundCustomer));
       } else {
         const apiDuplicate = await checkDuplicateCustomer(phone);
-        setDuplicateFound(normalizeDuplicateCustomer(apiDuplicate));
+        const duplicateCustomer = normalizeDuplicateCustomer(apiDuplicate);
+
+        if (!isLatestPhone(phone, latestPhoneRef.current)) return;
+
+        setDuplicateFound(duplicateCustomer);
+        setDuplicateCheckStatus(duplicateCustomer ? "existing" : "new");
+        setError(
+          duplicateCustomer ? getDuplicateCustomerMessage(duplicateCustomer) : ""
+        );
       }
     } catch (err) {
-      setDuplicateFound(findCustomerByPhone(customers, phone));
+      const foundCustomer = findCustomerByPhone(customers, phone);
+      if (!isLatestPhone(phone, latestPhoneRef.current)) return;
+
+      setDuplicateFound(foundCustomer);
+      setDuplicateCheckStatus(foundCustomer ? "existing" : "idle");
+      setError(foundCustomer ? getDuplicateCustomerMessage(foundCustomer) : "");
     } finally {
-      setCheckingDuplicate(false);
+      if (isLatestPhone(phone, latestPhoneRef.current)) {
+        setCheckingDuplicate(false);
+      }
     }
   }
 
@@ -153,6 +182,8 @@ function AddSale() {
       Notes: duplicateFound.Notes || "",
     }));
     setDuplicateFound(null);
+    setDuplicateCheckStatus("idle");
+    setError("");
   }
 
   async function handleSubmit(event) {
@@ -173,9 +204,7 @@ function AddSale() {
 
         if (existingCustomer) {
           setDuplicateFound(existingCustomer);
-          throw new Error(
-            `Customer already exists with this phone number. Use existing customer ${existingCustomer.Customer_ID} instead.`
-          );
+          throw new Error(getDuplicateCustomerMessage(existingCustomer));
         }
 
         payload.Customer_ID = "";
@@ -207,6 +236,8 @@ function AddSale() {
     setSuccessMessage("");
     setError("");
     setDuplicateFound(null);
+    setDuplicateCheckStatus("idle");
+    latestPhoneRef.current = "";
   }
 
   async function findDuplicateCustomer(phone) {
@@ -408,9 +439,7 @@ function AddSale() {
                   placeholder="e.g. 077 123 4567"
                   required={saleMode === "new"}
                 />
-                {checkingDuplicate && (
-                  <span className="form-hint">Checking customer phone...</span>
-                )}
+                <PhoneCheckHint status={duplicateCheckStatus} />
               </div>
 
               <div className="form-group">
@@ -603,6 +632,86 @@ function AddSale() {
       </form>
     </div>
   );
+}
+
+function findCustomerByPhone(customers, phone) {
+  const cleanPhone = normalizePhone(phone);
+
+  if (!cleanPhone) return null;
+
+  return (
+    customers.find(
+      (customer) => normalizePhone(customer.Phone) === cleanPhone
+    ) || null
+  );
+}
+
+function PhoneCheckHint({ status }) {
+  if (status === "checking") {
+    return (
+      <span className="form-hint">
+        Searching phone number to check existing customer...
+      </span>
+    );
+  }
+
+  if (status === "existing") {
+    return (
+      <span className="form-hint form-hint-error">
+        Existing customer found for this phone number.
+      </span>
+    );
+  }
+
+  if (status === "new") {
+    return (
+      <span className="form-hint form-hint-success">
+        No existing customer found. This looks like a new customer.
+      </span>
+    );
+  }
+
+  return null;
+}
+
+function normalizePhone(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+
+  if (!digits) return "";
+
+  let phone = digits;
+
+  if (phone.startsWith("0094") && phone.length > 9) {
+    phone = phone.slice(4);
+  } else if (phone.startsWith("94") && phone.length > 9) {
+    phone = phone.slice(2);
+  } else if (phone.startsWith("0") && phone.length > 9) {
+    phone = phone.replace(/^0+/, "");
+  }
+
+  return phone.length > 9 ? phone.slice(-9) : phone;
+}
+
+function isLatestPhone(phone, latestPhone) {
+  return normalizePhone(phone) === normalizePhone(latestPhone);
+}
+
+function normalizeDuplicateCustomer(value) {
+  if (!value) return null;
+
+  if (value.exists === false) return null;
+
+  const customer = value.customer || value;
+
+  if (!customer.Customer_ID && !customer.Customer_Name && !customer.Phone) {
+    return null;
+  }
+
+  return customer;
+}
+
+function getDuplicateCustomerMessage(customer) {
+  return `Customer already exists with this phone number. Use existing customer ${customer.Customer_ID} instead.`;
 }
 
 export default AddSale;
