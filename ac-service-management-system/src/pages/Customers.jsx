@@ -115,6 +115,10 @@ function Customers() {
     return customers.filter((customer) => {
       const customerName = String(getValue(customer, ["Customer_Name", "Customer Name", "name"]) || "").toLowerCase();
       const phone = String(getValue(customer, ["Phone", "phone"]) || "").toLowerCase();
+      const cleanSearchQuery = String(searchQuery || "").toLowerCase();
+      const searchDigits = String(searchQuery || "").replace(/\D/g, "");
+      const searchPhone = normalizePhoneSearchQuery(searchQuery);
+      const customerPhone = normalizePhone(phone);
       
       // Get sales channel - try multiple field name variations
       let salesChannel = customer.Sales_Channel || customer.sales_channel || "Showroom";
@@ -126,8 +130,10 @@ function Customers() {
       // Check if search query matches
       const matchesSearch =
         !searchQuery ||
-        customerName.includes(searchQuery.toLowerCase()) ||
-        phone.includes(searchQuery.toLowerCase());
+        customerName.includes(cleanSearchQuery) ||
+        phone.includes(cleanSearchQuery) ||
+        (searchPhone.length >= 1 && customerPhone.includes(searchPhone)) ||
+        (searchDigits && /^0+$/.test(searchDigits) && customerPhone !== "");
 
       // Check if channel filter matches
       const filterChannel = String(selectedChannel).toLowerCase().trim();
@@ -371,6 +377,40 @@ function formatDateForInput(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return date.toISOString().split("T")[0];
+}
+
+function normalizePhoneSearchQuery(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+
+  if (!digits) return "";
+
+  let phone = digits;
+
+  if (phone.startsWith("0094")) {
+    phone = phone.slice(4);
+  } else if (phone.startsWith("94")) {
+    phone = phone.slice(2);
+  }
+
+  return phone.replace(/^0+/, "");
+}
+
+function normalizePhone(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+
+  if (!digits) return "";
+
+  let phone = digits;
+
+  if (phone.startsWith("0094") && phone.length > 9) {
+    phone = phone.slice(4);
+  } else if (phone.startsWith("94") && phone.length > 9) {
+    phone = phone.slice(2);
+  } else if (phone.startsWith("0") && phone.length > 9) {
+    phone = phone.replace(/^0+/, "");
+  }
+
+  return phone.length > 9 ? phone.slice(-9) : phone;
 }
 
 export default Customers;

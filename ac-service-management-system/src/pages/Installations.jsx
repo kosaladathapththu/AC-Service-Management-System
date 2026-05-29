@@ -22,6 +22,7 @@ function Installations() {
   const [searchQuery, setSearchQuery] = useState("");
   const [profileLoadingId, setProfileLoadingId] = useState("");
   const [selectedProfile, setSelectedProfile] = useState(null);
+  const [markingCompletedId, setMarkingCompletedId] = useState("");
 
   const [editingInstallation, setEditingInstallation] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -120,6 +121,33 @@ function Installations() {
       setError(error.message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleMarkCompleted(installation, event) {
+    event.stopPropagation();
+
+    try {
+      setMarkingCompletedId(installation.Installation_ID);
+      setError("");
+      setSuccessMessage("");
+
+      await updateRecord(
+        "installations",
+        "Installation_ID",
+        installation.Installation_ID,
+        {
+          Installation_Status: "Completed",
+          Installation_Date: new Date().toISOString().split("T")[0],
+        }
+      );
+
+      setSuccessMessage("Installation marked as completed successfully.");
+      await loadInstallations();
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setMarkingCompletedId("");
     }
   }
 
@@ -225,6 +253,23 @@ function Installations() {
                 </div>
 
                 <div className="record-actions" onClick={(e) => e.stopPropagation()}>
+                  {String(installation.Installation_Status || "").toLowerCase() ===
+                    "pending" && (
+                    <button
+                      className="mark-completed-btn"
+                      onClick={(event) =>
+                        handleMarkCompleted(installation, event)
+                      }
+                      disabled={
+                        markingCompletedId === installation.Installation_ID
+                      }
+                    >
+                      {markingCompletedId === installation.Installation_ID
+                        ? "Updating..."
+                        : "Mark Completed"}
+                    </button>
+                  )}
+
                   <button className="edit-btn" onClick={() => openEditModal(installation)}>
                     Edit
                   </button>

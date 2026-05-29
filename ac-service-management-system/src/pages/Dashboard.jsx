@@ -551,12 +551,15 @@ function ReminderSection({ title, description, type, data = [] }) {
 
 function getCustomerSearchResults(customers, query) {
   const cleanQuery = String(query || "").trim().toLowerCase();
+  const queryDigits = String(query || "").replace(/\D/g, "");
+  const searchPhone = normalizePhoneSearchQuery(query);
   if (!cleanQuery) return [];
 
   return customers
     .filter((customer) => {
       const name = getValue(customer, ["Customer_Name", "Customer Name", "name"]);
       const phone = getValue(customer, ["Phone", "phone"]);
+      const customerPhone = normalizePhone(phone);
       const customerId = getValue(customer, [
         "Customer_ID",
         "customer_ID",
@@ -564,8 +567,15 @@ function getCustomerSearchResults(customers, query) {
         "id",
       ]);
 
-      return [name, phone, customerId].some((value) =>
+      const textMatches = [name, phone, customerId].some((value) =>
         String(value || "").toLowerCase().includes(cleanQuery)
+      );
+
+      if (textMatches) return true;
+
+      return (
+        (searchPhone.length >= 1 && customerPhone.includes(searchPhone)) ||
+        (queryDigits && /^0+$/.test(queryDigits) && customerPhone !== "")
       );
     })
     .slice(0, 8);
@@ -599,6 +609,40 @@ function formatPrice(value) {
   if (Number.isNaN(numberValue)) return String(value);
 
   return `Rs. ${numberValue.toLocaleString("en-LK")}`;
+}
+
+function normalizePhoneSearchQuery(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+
+  if (!digits) return "";
+
+  let phone = digits;
+
+  if (phone.startsWith("0094")) {
+    phone = phone.slice(4);
+  } else if (phone.startsWith("94")) {
+    phone = phone.slice(2);
+  }
+
+  return phone.replace(/^0+/, "");
+}
+
+function normalizePhone(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+
+  if (!digits) return "";
+
+  let phone = digits;
+
+  if (phone.startsWith("0094") && phone.length > 9) {
+    phone = phone.slice(4);
+  } else if (phone.startsWith("94") && phone.length > 9) {
+    phone = phone.slice(2);
+  } else if (phone.startsWith("0") && phone.length > 9) {
+    phone = phone.replace(/^0+/, "");
+  }
+
+  return phone.length > 9 ? phone.slice(-9) : phone;
 }
 
 function getWarrantyStatusClass(status) {
