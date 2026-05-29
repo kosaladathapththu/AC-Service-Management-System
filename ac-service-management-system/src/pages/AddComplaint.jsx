@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { addComplaint, getAllData } from "../api/googleSheetApi";
+import CustomerSearchSelect, {
+  getFilteredCustomers,
+} from "../components/CustomerSearchSelect";
 
 function AddComplaint() {
   const today = new Date().toISOString().split("T")[0];
@@ -7,6 +10,7 @@ function AddComplaint() {
   const [customers, setCustomers] = useState([]);
   const [acUnits, setAcUnits] = useState([]);
   const [filteredACUnits, setFilteredACUnits] = useState([]);
+  const [customerSearch, setCustomerSearch] = useState("");
 
   const [formData, setFormData] = useState({
     Customer_ID: "",
@@ -51,17 +55,7 @@ function AddComplaint() {
     const { name, value } = event.target;
 
     if (name === "Customer_ID") {
-      const customerACUnits = acUnits.filter(
-        (unit) => String(unit.Customer_ID).trim() === String(value).trim()
-      );
-
-      setFilteredACUnits(customerACUnits);
-
-      setFormData((previousData) => ({
-        ...previousData,
-        Customer_ID: value,
-        AC_ID: "",
-      }));
+      selectCustomerById(value);
 
       return;
     }
@@ -110,6 +104,7 @@ function AddComplaint() {
       });
 
       setFilteredACUnits([]);
+      setCustomerSearch("");
     } catch (error) {
       setError(error.message);
     } finally {
@@ -125,9 +120,49 @@ function AddComplaint() {
     return customer.Customer_ID || customer.customer_ID || customer.id || "";
   }
 
+  function selectCustomerById(customerId) {
+    const selectedCustomer = customers.find(
+      (customer) =>
+        normalizeValue(getCustomerId(customer)) === normalizeValue(customerId)
+    );
+
+    selectCustomer(selectedCustomer, customerId);
+  }
+
+  function selectCustomer(customer, customerId = getCustomerId(customer || {})) {
+    const customerACUnits = acUnits.filter(
+      (unit) => normalizeValue(unit.Customer_ID) === normalizeValue(customerId)
+    );
+
+    setFilteredACUnits(customerACUnits);
+
+    setFormData((previousData) => ({
+      ...previousData,
+      Customer_ID: customerId,
+      AC_ID: "",
+    }));
+
+    if (customer) {
+      setCustomerSearch(`${customerId} - ${getCustomerName(customer)}`);
+    }
+  }
+
   if (loadingData) {
     return <p>Loading form data...</p>;
   }
+
+  const filteredCustomers = getFilteredCustomers(
+    customers,
+    customerSearch,
+    getCustomerId,
+    getCustomerName
+  );
+  const selectedCustomer = customers.find(
+    (customer) =>
+      normalizeValue(getCustomerId(customer)) ===
+      normalizeValue(formData.Customer_ID)
+  );
+  const customerOptions = getCustomerOptions(filteredCustomers, selectedCustomer);
 
   return (
   <div className="page-content add-complaint-page">
@@ -144,6 +179,19 @@ function AddComplaint() {
           <h3>Linked Customer & AC Unit</h3>
 
           <div className="form-grid">
+            <div className="form-group full-width">
+              <label>Search Customer</label>
+              <CustomerSearchSelect
+                customers={customers}
+                query={customerSearch}
+                onQueryChange={setCustomerSearch}
+                onSelectCustomer={selectCustomer}
+                getCustomerId={getCustomerId}
+                getCustomerName={getCustomerName}
+                disabled={loadingData}
+              />
+            </div>
+
             <div className="form-group">
               <label>Customer *</label>
               <select
@@ -154,7 +202,7 @@ function AddComplaint() {
               >
                 <option value="">Select customer</option>
 
-                {customers.map((customer, index) => {
+                {customerOptions.map((customer, index) => {
                   const customerId = getCustomerId(customer);
 
                   return (
@@ -300,6 +348,27 @@ function AddComplaint() {
       </form>
     </div>
   );
+}
+
+function getCustomerOptions(filteredCustomers, selectedCustomer) {
+  if (!selectedCustomer) return filteredCustomers;
+
+  const selectedId = normalizeValue(
+    selectedCustomer.Customer_ID || selectedCustomer.customer_ID || selectedCustomer.id
+  );
+  const hasSelectedCustomer = filteredCustomers.some(
+    (customer) =>
+      normalizeValue(customer.Customer_ID || customer.customer_ID || customer.id) ===
+      selectedId
+  );
+
+  return hasSelectedCustomer
+    ? filteredCustomers
+    : [selectedCustomer, ...filteredCustomers];
+}
+
+function normalizeValue(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
 export default AddComplaint;

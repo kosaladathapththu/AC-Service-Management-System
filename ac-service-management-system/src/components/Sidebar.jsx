@@ -51,7 +51,9 @@ function Sidebar() {
     <aside className="sidebar">
       {/* Logo */}
       <div className="logo-box">
-        <img src={logoImage} alt="Supun Group of Companies" className="sidebar-logo" />
+        <NavLink to="/" className="sidebar-logo-link" aria-label="Go to dashboard">
+          <img src={logoImage} alt="Supun Group of Companies" className="sidebar-logo" />
+        </NavLink>
       </div>
 
       {/* Navigation */}

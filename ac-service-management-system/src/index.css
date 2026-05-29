@@ -75,7 +75,7 @@ input, select, textarea {
   position: sticky;
   top: 0;
   height: 100vh;
-  overflow-y: auto;
+  overflow: hidden;
   font-family: 'Outfit', 'Segoe UI', sans-serif;
 }
 
@@ -85,6 +85,12 @@ input, select, textarea {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   flex-shrink: 0;
   text-align: center;
+}
+
+.sidebar-logo-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .sidebar-logo {
@@ -101,6 +107,8 @@ input, select, textarea {
   padding: 14px 10px;
   flex: 1;
   gap: 0;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Group wrapper */
@@ -239,20 +247,20 @@ input, select, textarea {
 }
 
 /* ── Scrollbar ── */
-.sidebar::-webkit-scrollbar {
+.sidebar nav::-webkit-scrollbar {
   width: 4px;
 }
 
-.sidebar::-webkit-scrollbar-track {
+.sidebar nav::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.sidebar::-webkit-scrollbar-thumb {
+.sidebar nav::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.08);
   border-radius: 10px;
 }
 
-.sidebar::-webkit-scrollbar-thumb:hover {
+.sidebar nav::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.15);
 }
 
@@ -1686,6 +1694,33 @@ button.view-link:disabled {
 .add-payment-page input:disabled {
   background: #F3F4F6;
   color: #9CA3AF;
+  cursor: not-allowed;
+}
+
+.add-complaint-page .form-actions {
+  padding: 0 24px 24px;
+  margin-top: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.add-complaint-page .form-actions button {
+  background: #2563EB;
+  color: #FFFFFF;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-complaint-page .form-actions button:hover {
+  background: #1D4ED8;
+}
+
+.add-complaint-page .form-actions button:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
