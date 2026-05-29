@@ -13,6 +13,14 @@ function PaymentEvidence({ evidence }) {
             src={evidence.previewUrl}
             alt={evidence.fileName || "Payment evidence"}
             onError={(event) => {
+              if (
+                evidence.previewFallbackUrl &&
+                event.currentTarget.src !== evidence.previewFallbackUrl
+              ) {
+                event.currentTarget.src = evidence.previewFallbackUrl;
+                return;
+              }
+
               event.currentTarget.style.display = "none";
             }}
           />

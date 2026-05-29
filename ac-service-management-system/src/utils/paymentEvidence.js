@@ -8,7 +8,7 @@ export function getPaymentEvidence(payment) {
     "File Name",
   ]);
 
-  const rawLink = getFirstValue(payment, [
+  const rawLinkValue = getFirstValue(payment, [
     "Payment_Evidence",
     "Payment Evidence",
     "Payment_Evidence_Link",
@@ -50,6 +50,7 @@ export function getPaymentEvidence(payment) {
     "File_URL",
     "File URL",
   ]);
+  const rawLink = extractEvidenceUrl(rawLinkValue);
 
   const dataUrl = getFirstValue(payment, [
     "Payment_Evidence_File_Data_URL",
@@ -65,7 +66,8 @@ export function getPaymentEvidence(payment) {
     "Evidence File Data",
   ]);
 
-  const openUrl = dataUrl || rawLink || "";
+  const openUrl = dataUrl || getOpenEvidenceUrl(rawLink) || "";
+  const previewFallbackUrl = getImagePreviewFallbackUrl(rawLink || dataUrl || fileName);
   const isDataImage = String(dataUrl).startsWith("data:image");
   const previewUrl = isDataImage
     ? dataUrl
@@ -76,6 +78,7 @@ export function getPaymentEvidence(payment) {
     fileName,
     openUrl,
     previewUrl,
+    previewFallbackUrl,
     downloadUrl:
       !dataUrl && base64Data
         ? `data:application/octet-stream;base64,${base64Data}`
@@ -106,10 +109,49 @@ function getImagePreviewUrl(value) {
 
   const driveFileId = getGoogleDriveFileId(text);
   if (driveFileId) {
-    return `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w600`;
+    return `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w1000`;
   }
 
   return "";
+}
+
+function getImagePreviewFallbackUrl(value) {
+  if (!value) return "";
+
+  const text = String(value).trim();
+  const driveFileId = getGoogleDriveFileId(text);
+
+  if (driveFileId) {
+    return `https://drive.google.com/uc?export=view&id=${driveFileId}`;
+  }
+
+  return "";
+}
+
+function getOpenEvidenceUrl(value) {
+  if (!value) return "";
+
+  const text = String(value).trim();
+  const driveFileId = getGoogleDriveFileId(text);
+
+  if (driveFileId) {
+    return `https://drive.google.com/file/d/${driveFileId}/view?usp=sharing`;
+  }
+
+  return text;
+}
+
+function extractEvidenceUrl(value) {
+  if (!value) return "";
+
+  const text = String(value).trim();
+
+  if (/^https?:\/\//i.test(text)) return text;
+
+  const urlMatch = text.match(/https?:\/\/[^\s,}]+/i);
+  if (urlMatch) return urlMatch[0];
+
+  return text;
 }
 
 function getGoogleDriveFileId(link) {

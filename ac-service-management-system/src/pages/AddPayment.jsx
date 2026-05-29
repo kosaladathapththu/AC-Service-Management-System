@@ -3,6 +3,8 @@ import { addPayment, getAllData } from "../api/googleSheetApi";
 import CustomerSearchSelect, {
   getFilteredCustomers,
 } from "../components/CustomerSearchSelect";
+import PaymentEvidence from "../components/PaymentEvidence";
+import { getPaymentEvidence } from "../utils/paymentEvidence";
 import {
   getPurchasedAnnualServiceYears,
   hasAnnualServicePaymentForYear,
@@ -579,9 +581,7 @@ function AddPayment() {
                 {formData.Payment_Evidence_Link && (
                   <div className="evidence-preview">
                     <label>Preview</label>
-                    <div>
-                      <a href={formData.Payment_Evidence_Link} target="_blank" rel="noreferrer">Open evidence link</a>
-                    </div>
+                    <PaymentEvidence evidence={getPaymentEvidence(formData)} />
                   </div>
                 )}
               </div>
