@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
-import { getAllData, updateRecord } from "../api/googleSheetApi";
+import { useSearchParams } from "react-router-dom";
+import {
+  getAllData,
+  getCustomerProfile,
+  updateRecord,
+} from "../api/googleSheetApi";
+import CustomerProfileModal from "../components/CustomerProfileModal";
 import {
   formatCustomerDisplay,
   getRecordCustomerName,
@@ -19,6 +24,8 @@ function Complaints() {
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedId, setExpandedId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [profileLoadingId, setProfileLoadingId] = useState("");
+  const [selectedProfile, setSelectedProfile] = useState(null);
 
   const [editingComplaint, setEditingComplaint] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -135,6 +142,23 @@ function Complaints() {
       Complaint_Status: "Open",
       Notes: "",
     });
+  }
+
+  async function openProfileModal(customerId, event) {
+    event.stopPropagation();
+
+    if (!customerId || customerId === "-") return;
+
+    try {
+      setProfileLoadingId(customerId);
+      setError("");
+      const profile = await getCustomerProfile(customerId);
+      setSelectedProfile(profile);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setProfileLoadingId("");
+    }
   }
 
   function handleEditChange(event) {
@@ -388,12 +412,18 @@ function Complaints() {
                     Edit
                   </button>
 
-                  <Link
+                  <button
                     className="view-link"
-                    to={`/customers/${complaint.Customer_ID}`}
+                    type="button"
+                    onClick={(event) =>
+                      openProfileModal(complaint.Customer_ID, event)
+                    }
+                    disabled={profileLoadingId === complaint.Customer_ID}
                   >
-                    Profile
-                  </Link>
+                    {profileLoadingId === complaint.Customer_ID
+                      ? "Loading..."
+                      : "Profile"}
+                  </button>
                 </div>
 
                 <button className="expand-btn" aria-label="Expand record">
@@ -574,6 +604,13 @@ function Complaints() {
             </form>
           </div>
         </div>
+      )}
+
+      {selectedProfile && (
+        <CustomerProfileModal
+          profile={selectedProfile}
+          onClose={() => setSelectedProfile(null)}
+        />
       )}
     </div>
   );

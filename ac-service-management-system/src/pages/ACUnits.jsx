@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
-import { getAllData, updateRecord } from "../api/googleSheetApi";
+import { useSearchParams } from "react-router-dom";
+import {
+  getAllData,
+  getCustomerProfile,
+  updateRecord,
+} from "../api/googleSheetApi";
+import CustomerProfileModal from "../components/CustomerProfileModal";
 import {
   formatCustomerDisplay,
   getRecordCustomerName,
@@ -19,6 +24,8 @@ function ACUnits() {
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedId, setExpandedId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [profileLoadingId, setProfileLoadingId] = useState("");
+  const [selectedProfile, setSelectedProfile] = useState(null);
 
   const [editingUnit, setEditingUnit] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -131,6 +138,23 @@ function ACUnits() {
       Warranty_End_Date: "",
       Warranty_Status: "Active",
     });
+  }
+
+  async function openProfileModal(customerId, event) {
+    event.stopPropagation();
+
+    if (!customerId || customerId === "-") return;
+
+    try {
+      setProfileLoadingId(customerId);
+      setError("");
+      const profile = await getCustomerProfile(customerId);
+      setSelectedProfile(profile);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setProfileLoadingId("");
+    }
   }
 
   function handleEditChange(event) {
@@ -383,12 +407,18 @@ function ACUnits() {
                     Edit
                   </button>
 
-                  <Link
+                  <button
                     className="view-link"
-                    to={`/customers/${unit.Customer_ID}`}
+                    type="button"
+                    onClick={(event) =>
+                      openProfileModal(unit.Customer_ID, event)
+                    }
+                    disabled={profileLoadingId === unit.Customer_ID}
                   >
-                    Profile
-                  </Link>
+                    {profileLoadingId === unit.Customer_ID
+                      ? "Loading..."
+                      : "Profile"}
+                  </button>
                 </div>
 
                 <button className="expand-btn" aria-label="Expand record">
@@ -591,6 +621,13 @@ function ACUnits() {
             </form>
           </div>
         </div>
+      )}
+
+      {selectedProfile && (
+        <CustomerProfileModal
+          profile={selectedProfile}
+          onClose={() => setSelectedProfile(null)}
+        />
       )}
     </div>
   );

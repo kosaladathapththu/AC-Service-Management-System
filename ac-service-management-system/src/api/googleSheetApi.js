@@ -2,6 +2,11 @@ import {
   mergePaymentEvidenceCache,
   mergePaymentEvidenceCacheIntoProfile,
 } from "../utils/paymentEvidenceStore";
+import {
+  sortCustomerProfileDescending,
+  sortDashboardDataDescending,
+  sortRecordsDescending,
+} from "../utils/recordSort";
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwWbe_nB0VaBJw3A23vjbXaDNHUrBeSqcyKnnhOe26UAarOq6Ga-HtOv2Qfwj1fPZYV/exec";
 
@@ -13,7 +18,7 @@ export async function getDashboardData() {
     throw new Error(result.message || "Failed to load dashboard data");
   }
 
-  return result.data;
+  return sortDashboardDataDescending(result.data);
 }
 
 export async function getAllData(type) {
@@ -24,7 +29,10 @@ export async function getAllData(type) {
     throw new Error(result.message || "Failed to load data");
   }
 
-  return type === "payments" ? mergePaymentEvidenceCache(result.data) : result.data;
+  const data =
+    type === "payments" ? mergePaymentEvidenceCache(result.data) : result.data;
+
+  return sortRecordsDescending(type, data);
 }
 
 export async function getCustomerProfile(customerId) {
@@ -38,7 +46,9 @@ export async function getCustomerProfile(customerId) {
     throw new Error(result.message || "Failed to load customer profile");
   }
 
-  return mergePaymentEvidenceCacheIntoProfile(result.data);
+  return sortCustomerProfileDescending(
+    mergePaymentEvidenceCacheIntoProfile(result.data)
+  );
 }
 
 export async function addSale(saleData) {

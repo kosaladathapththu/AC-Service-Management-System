@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import {
   getAllData,
+  getCustomerProfile,
   updateRecord,
   sendManualReminder,
 } from "../api/googleSheetApi";
+import CustomerProfileModal from "../components/CustomerProfileModal";
 import {
   formatCustomerDisplay,
   getRecordCustomerName,
@@ -25,6 +27,8 @@ function Services() {
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedId, setExpandedId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [profileLoadingId, setProfileLoadingId] = useState("");
+  const [selectedProfile, setSelectedProfile] = useState(null);
 
   const [editingService, setEditingService] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -216,6 +220,23 @@ function Services() {
       setError(error.message);
     } finally {
       setSendingReminderId("");
+    }
+  }
+
+  async function openProfileModal(customerId, event) {
+    event.stopPropagation();
+
+    if (!customerId || customerId === "-") return;
+
+    try {
+      setProfileLoadingId(customerId);
+      setError("");
+      const profile = await getCustomerProfile(customerId);
+      setSelectedProfile(profile);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setProfileLoadingId("");
     }
   }
 
@@ -531,12 +552,18 @@ function Services() {
                     Edit
                   </button>
 
-                  <Link
+                  <button
                     className="view-link"
-                    to={`/customers/${service.Customer_ID}`}
+                    type="button"
+                    onClick={(event) =>
+                      openProfileModal(service.Customer_ID, event)
+                    }
+                    disabled={profileLoadingId === service.Customer_ID}
                   >
-                    Profile
-                  </Link>
+                    {profileLoadingId === service.Customer_ID
+                      ? "Loading..."
+                      : "Profile"}
+                  </button>
                 </div>
 
                 <button className="expand-btn" aria-label="Expand record">
@@ -746,6 +773,13 @@ function Services() {
             </form>
           </div>
         </div>
+      )}
+
+      {selectedProfile && (
+        <CustomerProfileModal
+          profile={selectedProfile}
+          onClose={() => setSelectedProfile(null)}
+        />
       )}
     </div>
   );

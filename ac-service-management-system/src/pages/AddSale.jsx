@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { addSale, getAllData } from "../api/googleSheetApi";
+import {
+  addSale,
+  checkDuplicateCustomer,
+  getAllData,
+} from "../api/googleSheetApi";
 
 function AddSale() {
   const today = new Date().toISOString().split("T")[0];
@@ -37,7 +41,6 @@ function AddSale() {
 
   const [checkingDuplicate, setCheckingDuplicate] = useState(false);
   const [duplicateFound, setDuplicateFound] = useState(null);
-  const [ignoreDuplicate, setIgnoreDuplicate] = useState(false);
 
   useEffect(() => {
     loadCustomers();
@@ -60,7 +63,6 @@ function AddSale() {
     setSuccessMessage("");
     setError("");
     setDuplicateFound(null);
-    setIgnoreDuplicate(false);
 
     setFormData((prev) => ({
       ...emptyForm,
@@ -102,36 +104,31 @@ function AddSale() {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Check for duplicate customer when phone is entered in new mode
-    if (name === "Phone" && value && saleMode === "new" && !ignoreDuplicate) {
+    if (name === "Phone" && saleMode === "new") {
       checkForDuplicate(value);
     }
   }
 
   async function checkForDuplicate(phone) {
-    if (!phone || phone.length < 3) {
+    const cleanPhone = normalizePhone(phone);
+
+    if (cleanPhone.length < 7) {
       setDuplicateFound(null);
       return;
     }
 
     try {
       setCheckingDuplicate(true);
-      
-      // Search through loaded customers for matching phone
-      const foundCustomer = customers.find(
-        (customer) =>
-          customer.Phone &&
-          String(customer.Phone).toLowerCase().trim() === String(phone).toLowerCase().trim()
-      );
+      const foundCustomer = findCustomerByPhone(customers, phone);
 
       if (foundCustomer) {
         setDuplicateFound(foundCustomer);
       } else {
-        setDuplicateFound(null);
+        const apiDuplicate = await checkDuplicateCustomer(phone);
+        setDuplicateFound(normalizeDuplicateCustomer(apiDuplicate));
       }
     } catch (err) {
-      // Silently fail on duplicate check
-      setDuplicateFound(null);
+      setDuplicateFound(findCustomerByPhone(customers, phone));
     } finally {
       setCheckingDuplicate(false);
     }
@@ -158,11 +155,6 @@ function AddSale() {
     setDuplicateFound(null);
   }
 
-  function handleIgnoreDuplicate() {
-    setIgnoreDuplicate(true);
-    setDuplicateFound(null);
-  }
-
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -176,6 +168,16 @@ function AddSale() {
       };
 
       if (saleMode === "new") {
+        const existingCustomer =
+          duplicateFound || (await findDuplicateCustomer(payload.Phone));
+
+        if (existingCustomer) {
+          setDuplicateFound(existingCustomer);
+          throw new Error(
+            `Customer already exists with this phone number. Use existing customer ${existingCustomer.Customer_ID} instead.`
+          );
+        }
+
         payload.Customer_ID = "";
       }
 
@@ -205,7 +207,6 @@ function AddSale() {
     setSuccessMessage("");
     setError("");
     setDuplicateFound(null);
-    setIgnoreDuplicate(false);
   }
 
   return (
@@ -237,7 +238,7 @@ function AddSale() {
         </div>
       )}
 
-      {duplicateFound && !ignoreDuplicate && (
+      {duplicateFound && (
         <div className="alert alert-warning">
           <div className="alert-content">
             <div className="alert-header">
@@ -245,10 +246,16 @@ function AddSale() {
               <strong>Customer Already Exists</strong>
             </div>
             <p>
-              A customer with phone number <strong>{formData.Phone}</strong> already exists in the system:
+              A customer with phone number <strong>{formData.Phone}</strong>{" "}
+              already exists in the system. Use the existing customer record
+              instead of creating a duplicate.
             </p>
             <div className="duplicate-customer-info">
-              <p><strong>{duplicateFound.Customer_Name}</strong></p>
+              <p>
+                <strong>
+                  {duplicateFound.Customer_ID} - {duplicateFound.Customer_Name}
+                </strong>
+              </p>
               <p>{duplicateFound.Phone}</p>
               <p className="text-gray">{duplicateFound.Address || "Address not provided"}</p>
             </div>
@@ -259,13 +266,6 @@ function AddSale() {
                 onClick={handleUseDuplicateCustomer}
               >
                 Use This Customer
-              </button>
-              <button
-                type="button"
-                className="btn-tertiary"
-                onClick={handleIgnoreDuplicate}
-              >
-                Create New Customer
               </button>
             </div>
           </div>

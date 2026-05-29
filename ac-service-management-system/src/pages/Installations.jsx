@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { getAllData, updateRecord } from "../api/googleSheetApi";
+import {
+  getAllData,
+  getCustomerProfile,
+  updateRecord,
+} from "../api/googleSheetApi";
+import CustomerProfileModal from "../components/CustomerProfileModal";
 import {
   formatCustomerDisplay,
   getRecordCustomerName,
@@ -15,6 +20,8 @@ function Installations() {
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedId, setExpandedId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [profileLoadingId, setProfileLoadingId] = useState("");
+  const [selectedProfile, setSelectedProfile] = useState(null);
 
   const [editingInstallation, setEditingInstallation] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -74,6 +81,23 @@ function Installations() {
       Installation_Status: "Pending",
       Notes: "",
     });
+  }
+
+  async function openProfileModal(customerId, event) {
+    event.stopPropagation();
+
+    if (!customerId || customerId === "-") return;
+
+    try {
+      setProfileLoadingId(customerId);
+      setError("");
+      const profile = await getCustomerProfile(customerId);
+      setSelectedProfile(profile);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setProfileLoadingId("");
+    }
   }
 
   function handleEditChange(event) {
@@ -204,6 +228,19 @@ function Installations() {
                   <button className="edit-btn" onClick={() => openEditModal(installation)}>
                     Edit
                   </button>
+
+                  <button
+                    className="view-link"
+                    type="button"
+                    onClick={(event) =>
+                      openProfileModal(installation.Customer_ID, event)
+                    }
+                    disabled={profileLoadingId === installation.Customer_ID}
+                  >
+                    {profileLoadingId === installation.Customer_ID
+                      ? "Loading..."
+                      : "Profile"}
+                  </button>
                 </div>
 
                 <button className="expand-btn" aria-label="Expand record">
@@ -298,6 +335,13 @@ function Installations() {
             </form>
           </div>
         </div>
+      )}
+
+      {selectedProfile && (
+        <CustomerProfileModal
+          profile={selectedProfile}
+          onClose={() => setSelectedProfile(null)}
+        />
       )}
     </div>
   );
