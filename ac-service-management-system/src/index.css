@@ -495,8 +495,8 @@ input, select, textarea {
 
 .alert {
   position: fixed;
-  top: 18px;
-  right: 18px;
+  top: 50%;
+  left: 50%;
   z-index: 3000;
   width: min(420px, calc(100vw - 32px));
   display: flex;
@@ -509,10 +509,11 @@ input, select, textarea {
   margin-bottom: 20px;
   line-height: 1.5;
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+  transform: translate(-50%, -50%);
 }
 
 .alert + .alert {
-  top: 96px;
+  transform: translate(-50%, calc(-50% + 82px));
 }
 
 .alert-success { background: #F0FDF4; color: #15803D; border: 1px solid #BBF7D0; }
@@ -668,17 +669,42 @@ input, select, textarea {
 p.success-text,
 p.error-text {
   position: fixed;
-  top: 18px;
-  right: 18px;
+  top: 50%;
+  left: 50%;
   z-index: 3000;
   width: min(420px, calc(100vw - 32px));
   margin: 0;
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.18);
+  transform: translate(-50%, -50%);
 }
 
 p.success-text + p.error-text,
 p.error-text + p.success-text {
-  top: 96px;
+  transform: translate(-50%, calc(-50% + 82px));
+}
+
+.alert-success,
+.alert-error,
+p.success-text,
+p.error-text {
+  animation: notification-pop-out 4s ease forwards;
+}
+
+@keyframes notification-pop-out {
+  0% {
+    opacity: 0;
+    scale: 0.96;
+  }
+  10%,
+  78% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 0.96;
+    pointer-events: none;
+  }
 }
 
 /* ============================================

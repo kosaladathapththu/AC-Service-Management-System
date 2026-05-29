@@ -9,6 +9,8 @@ import {
   hasAnnualServicePaymentForYear,
 } from "../utils/paymentRules";
 
+const PAYMENT_YEARS = ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"];
+
 function AddPayment() {
   const today = new Date().toISOString().split("T")[0];
 
@@ -32,6 +34,7 @@ function AddPayment() {
 
   const [customers, setCustomers] = useState([]);
   const [acUnits, setAcUnits] = useState([]);
+  const [installations, setInstallations] = useState([]);
   const [payments, setPayments] = useState([]);
   const [filteredACUnits, setFilteredACUnits] = useState([]);
 
@@ -52,14 +55,17 @@ function AddPayment() {
       setLoadingData(true);
       setError("");
 
-      const [customersData, acUnitsData, paymentsData] = await Promise.all([
+      const [customersData, acUnitsData, installationsData, paymentsData] =
+        await Promise.all([
         getAllData("customers"),
         getAllData("acUnits"),
+        getAllData("installations"),
         getAllData("payments"),
       ]);
 
       setCustomers(customersData);
       setAcUnits(acUnitsData);
+      setInstallations(installationsData);
       setPayments(paymentsData);
     } catch (error) {
       setError(error.message);
@@ -88,11 +94,73 @@ function AddPayment() {
     }
 
     if (name === "Payment_Type") {
+      const nextType = value;
+      const nextACUnits = getEligibleACUnitsForCustomer(
+        formData.Customer_ID,
+        nextType,
+        acUnits,
+        installations
+      );
+
       setFormData((previousData) => ({
         ...previousData,
-        Payment_Type: value,
+        Payment_Type: nextType,
+        Customer_ID:
+          nextType === "Installation" &&
+          !customerHasEligibleACUnit(
+            previousData.Customer_ID,
+            nextType,
+            acUnits,
+            installations
+          )
+            ? ""
+            : previousData.Customer_ID,
+        AC_ID: nextACUnits.some(
+          (unit) => normalizeValue(unit.AC_ID) === normalizeValue(previousData.AC_ID)
+        )
+          ? previousData.AC_ID
+          : "",
+        Payment_Year:
+          nextType === "Annual Service"
+            ? getNextAvailableAnnualYear(
+                payments,
+                previousData.Customer_ID,
+                previousData.AC_ID,
+                previousData.Payment_Year
+              )
+            : "",
         Annual_Service_Count:
-          value === "Annual Service" ? previousData.Annual_Service_Count || "3" : "",
+          nextType === "Annual Service" ? previousData.Annual_Service_Count || "3" : "",
+      }));
+      setFilteredACUnits(
+        nextType === "Installation" &&
+          !customerHasEligibleACUnit(formData.Customer_ID, nextType, acUnits, installations)
+          ? []
+          : nextACUnits
+      );
+      if (
+        nextType === "Installation" &&
+        !customerHasEligibleACUnit(formData.Customer_ID, nextType, acUnits, installations)
+      ) {
+        setCustomerSearch("");
+      }
+
+      return;
+    }
+
+    if (name === "AC_ID") {
+      setFormData((previousData) => ({
+        ...previousData,
+        AC_ID: value,
+        Payment_Year:
+          previousData.Payment_Type === "Annual Service"
+            ? getNextAvailableAnnualYear(
+                payments,
+                previousData.Customer_ID,
+                value,
+                previousData.Payment_Year
+              )
+            : previousData.Payment_Year,
       }));
 
       return;
@@ -188,7 +256,7 @@ function AddPayment() {
   }
 
   function selectCustomerById(customerId) {
-    const selectedCustomer = customers.find(
+    const selectedCustomer = customersForPaymentType.find(
       (customer) =>
         normalizeValue(getCustomerId(customer)) === normalizeValue(customerId)
     );
@@ -197,8 +265,11 @@ function AddPayment() {
   }
 
   function selectCustomer(customer, customerId = getCustomerId(customer || {})) {
-    const customerACUnits = acUnits.filter(
-      (unit) => normalizeValue(unit.Customer_ID) === normalizeValue(customerId)
+    const customerACUnits = getEligibleACUnitsForCustomer(
+      customerId,
+      formData.Payment_Type,
+      acUnits,
+      installations
     );
 
     setFilteredACUnits(customerACUnits);
@@ -219,14 +290,24 @@ function AddPayment() {
     formData.Customer_ID,
     formData.AC_ID
   );
+  const availableAnnualYears = PAYMENT_YEARS.filter(
+    (year) => !purchasedAnnualYears.includes(year)
+  );
   const duplicateAnnualYear = hasAnnualServicePaymentForYear(payments, formData);
-  const filteredCustomers = getFilteredCustomers(
+  const customersForPaymentType = getCustomersForPaymentType(
     customers,
+    acUnits,
+    installations,
+    formData.Payment_Type,
+    getCustomerId
+  );
+  const filteredCustomers = getFilteredCustomers(
+    customersForPaymentType,
     customerSearch,
     getCustomerId,
     getCustomerName
   );
-  const selectedCustomer = customers.find(
+  const selectedCustomer = customersForPaymentType.find(
     (customer) =>
       normalizeValue(getCustomerId(customer)) ===
       normalizeValue(formData.Customer_ID)
@@ -252,10 +333,23 @@ function AddPayment() {
           <h3>Linked Customer & AC Unit</h3>
 
           <div className="form-grid">
+            <div className="form-group">
+              <label>Payment Type</label>
+              <select
+                name="Payment_Type"
+                value={formData.Payment_Type}
+                onChange={handleChange}
+              >
+                <option value="Annual Service">Annual Service</option>
+                <option value="Repair">Repair</option>
+                <option value="Installation">Installation</option>
+              </select>
+            </div>
+
             <div className="form-group full-width">
               <label>Search Customer</label>
               <CustomerSearchSelect
-                customers={customers}
+                customers={customersForPaymentType}
                 query={customerSearch}
                 onQueryChange={setCustomerSearch}
                 onSelectCustomer={selectCustomer}
@@ -317,21 +411,23 @@ function AddPayment() {
                 value={formData.Payment_Year}
                 onChange={handleChange}
               >
-                <option value="">Not applicable</option>
-                {["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"].map((year) => (
-                  <option
-                    key={year}
-                    value={year}
-                    disabled={
-                      formData.Payment_Type === "Annual Service" &&
-                      purchasedAnnualYears.includes(year)
-                    }
-                  >
-                    {year}
-                    {purchasedAnnualYears.includes(year) ? " - already purchased" : ""}
-                  </option>
-                ))}
+                {formData.Payment_Type !== "Annual Service" && (
+                  <option value="">Not applicable</option>
+                )}
+                {formData.Payment_Type === "Annual Service" &&
+                  availableAnnualYears.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
               </select>
+              {formData.Payment_Type === "Annual Service" &&
+                availableAnnualYears.length === 0 &&
+                formData.AC_ID && (
+                  <span className="form-hint error-text">
+                    All annual service years are already paid for this AC unit.
+                  </span>
+                )}
               {duplicateAnnualYear && (
                 <span className="form-hint error-text">
                   This AC unit already has an annual service payment for {formData.Payment_Year}.
@@ -345,19 +441,6 @@ function AddPayment() {
           <h3>Payment Details</h3>
 
           <div className="form-grid">
-            <div className="form-group">
-              <label>Payment Type</label>
-              <select
-                name="Payment_Type"
-                value={formData.Payment_Type}
-                onChange={handleChange}
-              >
-                <option value="Annual Service">Annual Service</option>
-                <option value="Repair">Repair</option>
-                <option value="Installation">Installation</option>
-              </select>
-            </div>
-
             <div className="form-group">
               <label>Amount *</label>
               <input
@@ -523,7 +606,16 @@ function AddPayment() {
           )}
 
         <div className="form-actions">
-          <button type="submit" disabled={saving || duplicateAnnualYear}>
+          <button
+            type="submit"
+            disabled={
+              saving ||
+              duplicateAnnualYear ||
+              (formData.Payment_Type === "Annual Service" &&
+                Boolean(formData.AC_ID) &&
+                availableAnnualYears.length === 0)
+            }
+          >
             {saving ? "Saving..." : "Save Payment"}
           </button>
         </div>
@@ -539,6 +631,77 @@ function getServicePreviewText(count) {
   if (String(count) === "4") return "+3 months, +6 months, +9 months, +12 months";
 
   return "+4 months, +8 months, +12 months";
+}
+
+function getNextAvailableAnnualYear(payments, customerId, acId, currentYear) {
+  const availableYears = getAvailableAnnualYears(payments, customerId, acId);
+
+  if (availableYears.includes(currentYear)) return currentYear;
+
+  return availableYears[0] || "";
+}
+
+function getAvailableAnnualYears(payments, customerId, acId) {
+  const purchasedYears = getPurchasedAnnualServiceYears(payments, customerId, acId);
+
+  return PAYMENT_YEARS.filter((year) => !purchasedYears.includes(year));
+}
+
+function getCustomersForPaymentType(
+  customers,
+  acUnits,
+  installations,
+  paymentType,
+  getCustomerId
+) {
+  if (paymentType !== "Installation") return customers;
+
+  const uninstalledACUnits = getUninstalledACUnits(acUnits, installations);
+
+  return customers.filter((customer) =>
+    uninstalledACUnits.some(
+      (unit) =>
+        normalizeValue(unit.Customer_ID) === normalizeValue(getCustomerId(customer))
+    )
+  );
+}
+
+function getEligibleACUnitsForCustomer(customerId, paymentType, acUnits, installations) {
+  const units =
+    paymentType === "Installation"
+      ? getUninstalledACUnits(acUnits, installations)
+      : acUnits;
+
+  return units.filter(
+    (unit) => normalizeValue(unit.Customer_ID) === normalizeValue(customerId)
+  );
+}
+
+function customerHasEligibleACUnit(customerId, paymentType, acUnits, installations) {
+  return (
+    getEligibleACUnitsForCustomer(customerId, paymentType, acUnits, installations)
+      .length > 0
+  );
+}
+
+function getUninstalledACUnits(acUnits, installations) {
+  return acUnits.filter(
+    (unit) => !isACUnitAlreadyInInstallation(unit.AC_ID, installations)
+  );
+}
+
+function isACUnitAlreadyInInstallation(acId, installations) {
+  const cleanAcId = normalizeValue(acId);
+  if (!cleanAcId) return false;
+
+  return installations.some((installation) => {
+    const installationStatus = normalizeValue(installation.Installation_Status);
+
+    return (
+      normalizeValue(installation.AC_ID) === cleanAcId &&
+      installationStatus !== "cancelled"
+    );
+  });
 }
 
 function getCustomerOptions(filteredCustomers, selectedCustomer) {
