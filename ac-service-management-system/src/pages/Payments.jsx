@@ -11,6 +11,7 @@ import {
   getRecordCustomerName,
 } from "../utils/customerDisplay";
 import { getPaymentEvidence } from "../utils/paymentEvidence";
+import { hasAnnualServicePaymentForYear } from "../utils/paymentRules";
 import { recordMatchesSearch } from "../utils/recordSearch";
 
 function Payments() {
@@ -170,6 +171,24 @@ function Payments() {
       setError("");
       setSuccessMessage("");
 
+      const updatedPayment = {
+        ...editingPayment,
+        ...editFormData,
+      };
+
+      if (
+        hasAnnualServicePaymentForYear(
+          payments,
+          updatedPayment,
+          editingPayment.Payment_ID
+        )
+      ) {
+        setError(
+          `${updatedPayment.Payment_Year} annual service payment already exists for this AC unit. Select another year.`
+        );
+        return;
+      }
+
       await updateRecord(
         "payments",
         "Payment_ID",
@@ -214,9 +233,24 @@ function Payments() {
       setError("");
       setSuccessMessage("");
 
-      await updateRecord("payments", "Payment_ID", payment.Payment_ID, {
+      const updatedPayment = {
+        ...payment,
         Payment_Status: "Paid",
         Payment_Date: new Date().toISOString().split("T")[0],
+      };
+
+      if (
+        hasAnnualServicePaymentForYear(payments, updatedPayment, payment.Payment_ID)
+      ) {
+        setError(
+          `${updatedPayment.Payment_Year} annual service payment already exists for this AC unit.`
+        );
+        return;
+      }
+
+      await updateRecord("payments", "Payment_ID", payment.Payment_ID, {
+        Payment_Status: updatedPayment.Payment_Status,
+        Payment_Date: updatedPayment.Payment_Date,
       });
 
       setSuccessMessage("Payment marked as paid successfully.");

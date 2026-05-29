@@ -19,6 +19,7 @@ function AddInstallation() {
 
   const [customers, setCustomers] = useState([]);
   const [acUnits, setAcUnits] = useState([]);
+  const [installations, setInstallations] = useState([]);
   const [filteredACUnits, setFilteredACUnits] = useState([]);
 
   const [formData, setFormData] = useState(emptyForm);
@@ -37,11 +38,15 @@ function AddInstallation() {
       setLoadingData(true);
       setError("");
 
-      const customersData = await getAllData("customers");
-      const acUnitsData = await getAllData("acUnits");
+      const [customersData, acUnitsData, installationsData] = await Promise.all([
+        getAllData("customers"),
+        getAllData("acUnits"),
+        getAllData("installations"),
+      ]);
 
       setCustomers(customersData);
       setAcUnits(acUnitsData);
+      setInstallations(installationsData);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -53,8 +58,11 @@ function AddInstallation() {
     const { name, value } = event.target;
 
     if (name === "Customer_ID") {
-      const customerACUnits = acUnits.filter(
-        (unit) => String(unit.Customer_ID).trim() === String(value).trim()
+      const customerACUnits = getUninstalledACUnits(
+        acUnits,
+        installations
+      ).filter(
+        (unit) => normalizeValue(unit.Customer_ID) === normalizeValue(value)
       );
 
       setFilteredACUnits(customerACUnits);
@@ -73,7 +81,19 @@ function AddInstallation() {
       setError("");
       setSuccessMessage("");
 
+      if (isACUnitAlreadyInInstallation(formData.AC_ID, installations)) {
+        setError("This AC unit already has an installation record. Select another AC unit.");
+        return;
+      }
+
       const result = await addInstallation(formData);
+      setInstallations((previousInstallations) => [
+        ...previousInstallations,
+        {
+          ...formData,
+          Installation_ID: result.installationId || result.Installation_ID,
+        },
+      ]);
 
       const completedMessage =
         formData.Installation_Status === "Completed"
@@ -107,6 +127,15 @@ function AddInstallation() {
   function getCustomerId(customer) {
     return customer.Customer_ID || customer.customer_ID || customer.id || "";
   }
+
+  const uninstalledACUnits = getUninstalledACUnits(acUnits, installations);
+  const customersWithUninstalledACUnits = customers.filter((customer) => {
+    const customerId = getCustomerId(customer);
+
+    return uninstalledACUnits.some(
+      (unit) => normalizeValue(unit.Customer_ID) === normalizeValue(customerId)
+    );
+  });
 
   if (loadingData) {
     return (
@@ -167,7 +196,7 @@ function AddInstallation() {
                 required
               >
                 <option value="">— Select a customer —</option>
-                {customers.map((customer, index) => {
+                {customersWithUninstalledACUnits.map((customer, index) => {
                   const id = getCustomerId(customer);
 
                   return (
@@ -177,6 +206,11 @@ function AddInstallation() {
                   );
                 })}
               </select>
+              {customersWithUninstalledACUnits.length === 0 && (
+                <span className="form-hint">
+                  All available AC units already have installation records.
+                </span>
+              )}
             </div>
 
             <div className="form-group">
@@ -205,7 +239,7 @@ function AddInstallation() {
 
               {formData.Customer_ID && filteredACUnits.length === 0 && (
                 <span className="form-hint">
-                  No AC units found for this customer.
+                  No uninstalled AC units found for this customer.
                 </span>
               )}
             </div>
@@ -362,6 +396,30 @@ function getServicePreviewText(count) {
   if (String(count) === "4") return "+3 months, +6 months, +9 months, +12 months";
 
   return "+4 months, +8 months, +12 months";
+}
+
+function getUninstalledACUnits(acUnits, installations) {
+  return acUnits.filter(
+    (unit) => !isACUnitAlreadyInInstallation(unit.AC_ID, installations)
+  );
+}
+
+function isACUnitAlreadyInInstallation(acId, installations) {
+  const cleanAcId = normalizeValue(acId);
+  if (!cleanAcId) return false;
+
+  return installations.some((installation) => {
+    const installationStatus = normalizeValue(installation.Installation_Status);
+
+    return (
+      normalizeValue(installation.AC_ID) === cleanAcId &&
+      installationStatus !== "cancelled"
+    );
+  });
+}
+
+function normalizeValue(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
 export default AddInstallation;

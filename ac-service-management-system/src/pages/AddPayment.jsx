@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { addPayment, getAllData } from "../api/googleSheetApi";
 import { cachePaymentEvidence } from "../utils/paymentEvidenceStore";
+import {
+  getPurchasedAnnualServiceYears,
+  hasAnnualServicePaymentForYear,
+} from "../utils/paymentRules";
 
 function AddPayment() {
   const today = new Date().toISOString().split("T")[0];
@@ -25,6 +29,7 @@ function AddPayment() {
 
   const [customers, setCustomers] = useState([]);
   const [acUnits, setAcUnits] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [filteredACUnits, setFilteredACUnits] = useState([]);
 
   const [formData, setFormData] = useState(emptyForm);
@@ -43,11 +48,15 @@ function AddPayment() {
       setLoadingData(true);
       setError("");
 
-      const customersData = await getAllData("customers");
-      const acUnitsData = await getAllData("acUnits");
+      const [customersData, acUnitsData, paymentsData] = await Promise.all([
+        getAllData("customers"),
+        getAllData("acUnits"),
+        getAllData("payments"),
+      ]);
 
       setCustomers(customersData);
       setAcUnits(acUnitsData);
+      setPayments(paymentsData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -139,8 +148,22 @@ function AddPayment() {
       setError("");
       setSuccessMessage("");
 
+      if (hasAnnualServicePaymentForYear(payments, formData)) {
+        setError(
+          `${formData.Payment_Year} annual service payment already exists for this AC unit. Select another year.`
+        );
+        return;
+      }
+
       const result = await addPayment(formData);
       cachePaymentEvidence(result.paymentId || result.Payment_ID, formData);
+      setPayments((previousPayments) => [
+        ...previousPayments,
+        {
+          ...formData,
+          Payment_ID: result.paymentId || result.Payment_ID,
+        },
+      ]);
 
       const annualMessage =
         formData.Payment_Type === "Annual Service" &&
@@ -168,6 +191,13 @@ function AddPayment() {
   function getCustomerId(customer) {
     return customer.Customer_ID || customer.customer_ID || customer.id || "";
   }
+
+  const purchasedAnnualYears = getPurchasedAnnualServiceYears(
+    payments,
+    formData.Customer_ID,
+    formData.AC_ID
+  );
+  const duplicateAnnualYear = hasAnnualServicePaymentForYear(payments, formData);
 
   if (loadingData) {
     return <p>Loading form data...</p>;
@@ -241,12 +271,25 @@ function AddPayment() {
                 onChange={handleChange}
               >
                 <option value="">Not applicable</option>
-                <option value="Year 1">Year 1</option>
-                <option value="Year 2">Year 2</option>
-                <option value="Year 3">Year 3</option>
-                <option value="Year 4">Year 4</option>
-                <option value="Year 5">Year 5</option>
+                {["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"].map((year) => (
+                  <option
+                    key={year}
+                    value={year}
+                    disabled={
+                      formData.Payment_Type === "Annual Service" &&
+                      purchasedAnnualYears.includes(year)
+                    }
+                  >
+                    {year}
+                    {purchasedAnnualYears.includes(year) ? " - already purchased" : ""}
+                  </option>
+                ))}
               </select>
+              {duplicateAnnualYear && (
+                <span className="form-hint error-text">
+                  This AC unit already has an annual service payment for {formData.Payment_Year}.
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -433,7 +476,7 @@ function AddPayment() {
           )}
 
         <div className="form-actions">
-          <button type="submit" disabled={saving}>
+          <button type="submit" disabled={saving || duplicateAnnualYear}>
             {saving ? "Saving..." : "Save Payment"}
           </button>
         </div>
