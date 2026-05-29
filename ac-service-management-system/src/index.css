@@ -25,6 +25,16 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+}
+
 a {
   text-decoration: none;
   color: inherit;
@@ -45,7 +55,8 @@ input, select, textarea {
 
 .app-layout {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .main-content {
@@ -53,12 +64,16 @@ input, select, textarea {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  height: 100vh;
   overflow: hidden;
 }
 
 .page-content {
   padding: 28px;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scroll-padding-top: 104px;
 }
 /* ============================================
    SIDEBAR — Charcoal + Green Active Theme
@@ -1356,8 +1371,25 @@ button.view-link:disabled {
 }
 
 @media (max-width: 900px) {
+  body {
+    overflow: auto;
+  }
+
   .app-layout {
     flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .main-content {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .page-content {
+    overflow: visible;
   }
 
   .sidebar {
@@ -2548,6 +2580,10 @@ button.view-link:disabled {
   border: 1px solid #E5E7EB;
   border-radius: 10px;
   padding: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .search-box {
@@ -3590,6 +3626,10 @@ button.view-link:disabled {
   justify-content: space-between;
   gap: 16px;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .payment-filter-panel h3 {
@@ -3673,6 +3713,10 @@ button.view-link:disabled {
   justify-content: space-between;
   gap: 16px;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .service-filter-panel h3 {
@@ -3851,6 +3895,10 @@ button.view-link:disabled {
   justify-content: space-between;
   gap: 16px;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .complaint-filter-panel h3 {
@@ -3930,6 +3978,10 @@ button.view-link:disabled {
   justify-content: space-between;
   gap: 16px;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .ac-filter-panel h3 {
