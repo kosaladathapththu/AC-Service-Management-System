@@ -209,6 +209,15 @@ function AddSale() {
     setDuplicateFound(null);
   }
 
+  async function findDuplicateCustomer(phone) {
+    const foundCustomer = findCustomerByPhone(customers, phone);
+
+    if (foundCustomer) return foundCustomer;
+
+    const apiDuplicate = await checkDuplicateCustomer(phone);
+    return normalizeDuplicateCustomer(apiDuplicate);
+  }
+
   return (
     <div>
       <div className="page-header">
@@ -399,6 +408,9 @@ function AddSale() {
                   placeholder="e.g. 077 123 4567"
                   required={saleMode === "new"}
                 />
+                {checkingDuplicate && (
+                  <span className="form-hint">Checking customer phone...</span>
+                )}
               </div>
 
               <div className="form-group">
@@ -572,7 +584,11 @@ function AddSale() {
             Clear Form
           </button>
 
-          <button type="submit" className="btn-primary" disabled={loading}>
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={loading || checkingDuplicate || Boolean(duplicateFound)}
+          >
             {loading ? (
               <>
                 <span className="spinner" /> Saving...
