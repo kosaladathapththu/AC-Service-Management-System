@@ -701,6 +701,16 @@ p.error-text {
   animation: notification-pop-out 4s ease forwards;
 }
 
+.alert-long {
+  animation-duration: 10s;
+}
+
+.alert-persistent {
+  animation: none;
+  opacity: 1;
+  pointer-events: auto;
+}
+
 @keyframes notification-pop-out {
   0% {
     opacity: 0;

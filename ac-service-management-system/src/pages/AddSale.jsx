@@ -302,14 +302,14 @@ function AddSale() {
       )}
 
       {error && (
-        <div className="alert alert-error">
+        <div className={duplicateFound ? "alert alert-error alert-long" : "alert alert-error"}>
           <span className="alert-icon">✕</span>
           {error}
         </div>
       )}
 
       {duplicateFound && (
-        <div className="alert alert-warning">
+        <div className="alert alert-warning alert-persistent">
           <div className="alert-content">
             <div className="alert-header">
               <span className="alert-icon">⚠️</span>
