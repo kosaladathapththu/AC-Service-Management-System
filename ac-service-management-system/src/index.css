@@ -685,6 +685,9 @@ p.error-text + p.success-text {
 
 .alert-success,
 .alert-error,
+.alert-warning,
+.alert-info,
+.notification-popup,
 p.success-text,
 p.error-text {
   animation: notification-pop-out 4s ease forwards;
