@@ -110,7 +110,7 @@ function AddService() {
 
   function selectCustomerById(customerId) {
     const selectedCustomer = customers.find(
-      (customer) => String(getCustomerId(customer)) === String(customerId)
+      (customer) => normalizeValue(getCustomerId(customer)) === normalizeValue(customerId)
     );
 
     selectCustomer(selectedCustomer, customerId);
@@ -118,7 +118,7 @@ function AddService() {
 
   function selectCustomer(customer, customerId = getCustomerId(customer || {})) {
     const customerACUnits = acUnits.filter(
-      (unit) => String(unit.Customer_ID).trim() === String(customerId).trim()
+      (unit) => normalizeValue(unit.Customer_ID) === normalizeValue(customerId)
     );
 
     setFilteredACUnits(customerACUnits);
@@ -132,7 +132,7 @@ function AddService() {
   if (loadingData) return <p>Loading form data...</p>;
 
   const selectedCustomer = customers.find(
-    (c) => String(getCustomerId(c)) === String(formData.Customer_ID)
+    (c) => normalizeValue(getCustomerId(c)) === normalizeValue(formData.Customer_ID)
   );
   const selectedAC = filteredACUnits.find(
     (u) => String(u.AC_ID) === String(formData.AC_ID)
@@ -143,6 +143,7 @@ function AddService() {
     getCustomerId,
     getCustomerName
   );
+  const customerOptions = getCustomerOptions(filteredCustomers, selectedCustomer);
 
   return (
     <div className="add-form-page">
@@ -181,7 +182,7 @@ function AddService() {
               <label>Customer <span className="required">*</span></label>
               <select name="Customer_ID" value={formData.Customer_ID} onChange={handleChange} required>
                 <option value="">Select customer</option>
-                {filteredCustomers.map((customer, index) => {
+                {customerOptions.map((customer, index) => {
                   const cid = getCustomerId(customer);
                   return (
                     <option key={cid || index} value={cid}>
@@ -341,6 +342,27 @@ function getWarrantyClass(status) {
   if (v === "expired") return "status-expired";
   if (v === "cancelled") return "status-cancelled";
   return "";
+}
+
+function getCustomerOptions(filteredCustomers, selectedCustomer) {
+  if (!selectedCustomer) return filteredCustomers;
+
+  const selectedId = normalizeValue(
+    selectedCustomer.Customer_ID || selectedCustomer.customer_ID || selectedCustomer.id
+  );
+  const hasSelectedCustomer = filteredCustomers.some(
+    (customer) =>
+      normalizeValue(customer.Customer_ID || customer.customer_ID || customer.id) ===
+      selectedId
+  );
+
+  return hasSelectedCustomer
+    ? filteredCustomers
+    : [selectedCustomer, ...filteredCustomers];
+}
+
+function normalizeValue(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
 export default AddService;

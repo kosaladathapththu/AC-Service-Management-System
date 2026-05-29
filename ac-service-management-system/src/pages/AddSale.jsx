@@ -383,9 +383,7 @@ function AddSale() {
                   customers={customers}
                   query={customerSearch}
                   onQueryChange={setCustomerSearch}
-                  onSelectCustomer={(customer) =>
-                    selectExistingCustomer(customer, getCustomerIdForSearch(customer))
-                  }
+                  onSelectCustomer={selectExistingCustomer}
                   getCustomerId={getCustomerIdForSearch}
                   getCustomerName={getCustomerNameForSearch}
                   disabled={loadingCustomers}
@@ -410,15 +408,19 @@ function AddSale() {
                       : "Select customer"}
                   </option>
 
-                  {filteredCustomers.map((customer) => (
+                  {filteredCustomers.map((customer) => {
+                    const customerId = getCustomerIdForSearch(customer);
+
+                    return (
                     <option
-                      key={customer.Customer_ID}
-                      value={customer.Customer_ID}
+                      key={customerId}
+                      value={customerId}
                     >
-                      {customer.Customer_ID} - {customer.Customer_Name} -{" "}
+                      {customerId} - {getCustomerNameForSearch(customer)} -{" "}
                       {customer.Phone || "No phone"}
                     </option>
-                  ))}
+                    );
+                  })}
                 </select>
               </div>
 

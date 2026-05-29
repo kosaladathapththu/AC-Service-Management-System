@@ -42,7 +42,7 @@ function CustomerSearchSelect({
                 <button
                   key={customerId || index}
                   type="button"
-                  onClick={() => onSelectCustomer(customer)}
+                  onClick={() => onSelectCustomer(customer, customerId)}
                 >
                   <strong>{customerName}</strong>
                   <span>
@@ -73,13 +73,18 @@ function customerMatchesSearch(customer, query, getCustomerId, getCustomerName) 
   const cleanQuery = String(query || "").trim().toLowerCase();
   const queryDigits = String(query || "").replace(/\D/g, "");
   const cleanQueryPhone = normalizePhoneSearchQuery(query);
+  const customerId = getCustomerId(customer);
+  const customerName = getCustomerName(customer);
 
   if (!cleanQuery) return true;
 
   const textMatches = [
-    getCustomerId(customer),
-    getCustomerName(customer),
+    customerId,
+    customerName,
+    `${customerId} - ${customerName}`,
+    `${customerId} ${customerName}`,
     customer.Phone,
+    formatDisplayPhone(customer.Phone),
     customer.Email,
     customer.Address,
   ].some((value) => String(value || "").toLowerCase().includes(cleanQuery));
