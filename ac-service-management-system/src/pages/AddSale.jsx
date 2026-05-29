@@ -33,6 +33,7 @@ function AddSale() {
   const [saleMode, setSaleMode] = useState("new");
   const [customers, setCustomers] = useState([]);
   const [formData, setFormData] = useState(emptyForm);
+  const [customerSearch, setCustomerSearch] = useState("");
 
   const [loadingCustomers, setLoadingCustomers] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -67,6 +68,7 @@ function AddSale() {
     setDuplicateFound(null);
     setDuplicateCheckStatus("idle");
     latestPhoneRef.current = "";
+    setCustomerSearch("");
 
     setFormData((prev) => ({
       ...emptyForm,
@@ -233,6 +235,7 @@ function AddSale() {
   function handleReset() {
     setFormData(emptyForm);
     setSaleMode("new");
+    setCustomerSearch("");
     setSuccessMessage("");
     setError("");
     setDuplicateFound(null);
@@ -248,6 +251,10 @@ function AddSale() {
     const apiDuplicate = await checkDuplicateCustomer(phone);
     return normalizeDuplicateCustomer(apiDuplicate);
   }
+
+  const filteredCustomers = customers.filter((customer) =>
+    customerMatchesSearch(customer, customerSearch)
+  );
 
   return (
     <div>
@@ -356,6 +363,22 @@ function AddSale() {
 
             <div className="form-grid">
               <div className="form-group full-width">
+                <label>Search Customer</label>
+                <input
+                  type="search"
+                  value={customerSearch}
+                  onChange={(event) => setCustomerSearch(event.target.value)}
+                  placeholder="Search by customer ID, name, phone, email, or address"
+                  disabled={loadingCustomers}
+                />
+                <span className="form-hint">
+                  {loadingCustomers
+                    ? "Loading customers..."
+                    : `${filteredCustomers.length} matching customer(s)`}
+                </span>
+              </div>
+
+              <div className="form-group full-width">
                 <label>
                   Customer <span className="required">*</span>
                 </label>
@@ -373,7 +396,7 @@ function AddSale() {
                       : "Select customer"}
                   </option>
 
-                  {customers.map((customer) => (
+                  {filteredCustomers.map((customer) => (
                     <option
                       key={customer.Customer_ID}
                       value={customer.Customer_ID}
@@ -383,6 +406,11 @@ function AddSale() {
                     </option>
                   ))}
                 </select>
+                {customerSearch && filteredCustomers.length === 0 && (
+                  <span className="form-hint form-hint-error">
+                    No customer found for this search.
+                  </span>
+                )}
               </div>
 
               {formData.Customer_ID && (
@@ -644,6 +672,20 @@ function findCustomerByPhone(customers, phone) {
       (customer) => normalizePhone(customer.Phone) === cleanPhone
     ) || null
   );
+}
+
+function customerMatchesSearch(customer, query) {
+  const cleanQuery = String(query || "").trim().toLowerCase();
+
+  if (!cleanQuery) return true;
+
+  return [
+    customer.Customer_ID,
+    customer.Customer_Name,
+    customer.Phone,
+    customer.Email,
+    customer.Address,
+  ].some((value) => String(value || "").toLowerCase().includes(cleanQuery));
 }
 
 function PhoneCheckHint({ status }) {
