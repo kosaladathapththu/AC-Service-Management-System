@@ -3,7 +3,6 @@ import { addPayment, getAllData } from "../api/googleSheetApi";
 import CustomerSearchSelect, {
   getFilteredCustomers,
 } from "../components/CustomerSearchSelect";
-import { cachePaymentEvidence } from "../utils/paymentEvidenceStore";
 import {
   getPurchasedAnnualServiceYears,
   hasAnnualServicePaymentForYear,
@@ -25,11 +24,14 @@ function AddPayment() {
     Due_Date: today,
     Annual_Service_Count: "3",
     Notes: "",
+    Payment_Evidence: "",
     Payment_Evidence_Method: "link", // 'link' or 'file'
     Payment_Evidence_Link: "",
     Payment_Evidence_File_Name: "",
+    Payment_Evidence_File_Mime_Type: "",
     Payment_Evidence_File_Data: "",
     Payment_Evidence_File_Data_URL: "",
+    Payment_Evidence_Drive_Link: "",
   };
 
   const [customers, setCustomers] = useState([]);
@@ -166,6 +168,16 @@ function AddPayment() {
       return;
     }
 
+    if (name === "Payment_Evidence_Link") {
+      setFormData((previousData) => ({
+        ...previousData,
+        Payment_Evidence: value,
+        Payment_Evidence_Link: value,
+      }));
+
+      return;
+    }
+
     setFormData((previousData) => ({
       ...previousData,
       [name]: value,
@@ -180,7 +192,10 @@ function AddPayment() {
       setFormData((prev) => ({
         ...prev,
         Payment_Evidence_File_Name: "",
+        Payment_Evidence_File_Mime_Type: "",
         Payment_Evidence_File_Data: "",
+        Payment_Evidence_File_Data_URL: "",
+        Payment_Evidence_Drive_Link: "",
       }));
 
       return;
@@ -194,8 +209,10 @@ function AddPayment() {
       setFormData((prev) => ({
         ...prev,
         Payment_Evidence_File_Name: file.name,
+        Payment_Evidence_File_Mime_Type: file.type || "application/octet-stream",
         Payment_Evidence_File_Data: base64,
         Payment_Evidence_File_Data_URL: result,
+        Payment_Evidence_Drive_Link: "",
       }));
     };
 
@@ -218,12 +235,25 @@ function AddPayment() {
       }
 
       const result = await addPayment(formData);
-      cachePaymentEvidence(result.paymentId || result.Payment_ID, formData);
       setPayments((previousPayments) => [
         ...previousPayments,
         {
           ...formData,
           Payment_ID: result.paymentId || result.Payment_ID,
+          Payment_Evidence:
+            result.paymentEvidenceLink ||
+            result.Payment_Evidence ||
+            result.Payment_Evidence_Link ||
+            formData.Payment_Evidence ||
+            formData.Payment_Evidence_Link,
+          Payment_Evidence_Link:
+            result.paymentEvidenceLink ||
+            result.Payment_Evidence_Link ||
+            formData.Payment_Evidence_Link,
+          Payment_Evidence_Drive_Link:
+            result.paymentEvidenceLink ||
+            result.Payment_Evidence_Drive_Link ||
+            formData.Payment_Evidence_Drive_Link,
         },
       ]);
 
@@ -564,7 +594,9 @@ function AddPayment() {
                 {formData.Payment_Evidence_File_Name && (
                   <span className="form-hint">Selected: {formData.Payment_Evidence_File_Name}</span>
                 )}
-                <span className="form-hint">Files are encoded and sent with the payment record.</span>
+                <span className="form-hint">
+                  Files are sent to Apps Script and must be saved to Google Drive.
+                </span>
 
                 {formData.Payment_Evidence_File_Data_URL && (
                   <div className="evidence-preview">

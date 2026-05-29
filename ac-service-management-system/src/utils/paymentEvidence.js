@@ -9,16 +9,18 @@ export function getPaymentEvidence(payment) {
   ]);
 
   const rawLink = getFirstValue(payment, [
+    "Payment_Evidence",
+    "Payment Evidence",
     "Payment_Evidence_Link",
     "Payment Evidence Link",
+    "Payment_Evidence_Drive_Link",
+    "Payment Evidence Drive Link",
     "Payment_Evidence_URL",
     "Payment Evidence URL",
     "Payment_Evidence_File_Link",
     "Payment Evidence File Link",
     "Payment_Evidence_File_URL",
     "Payment Evidence File URL",
-    "Payment_Evidence_Drive_Link",
-    "Payment Evidence Drive Link",
     "Payment_Photo_Link",
     "Payment Photo Link",
     "Payment_Photo_URL",

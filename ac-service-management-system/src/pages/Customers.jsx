@@ -4,6 +4,7 @@ import { getAllData, updateRecord } from "../api/googleSheetApi";
 
 function Customers() {
   const [customers, setCustomers] = useState([]);
+  const [acUnits, setAcUnits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -33,8 +34,12 @@ function Customers() {
     try {
       setLoading(true);
       setError("");
-      const data = await getAllData("customers");
-      setCustomers(data);
+      const [customersData, acUnitsData] = await Promise.all([
+        getAllData("customers"),
+        getAllData("acUnits"),
+      ]);
+      setCustomers(customersData);
+      setAcUnits(acUnitsData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -56,7 +61,7 @@ function Customers() {
       Google_Map_Link: customer.Google_Map_Link || customer.Google_Map_Li || "",
       Created_Date: formatDateForInput(customer.Created_Date),
       Notes: customer.Notes || "",
-      Sales_Channel: customer.Sales_Channel || "Showroom",
+      Sales_Channel: getCustomerSalesChannel(customer, acUnits),
     });
   }
 
@@ -92,6 +97,11 @@ function Customers() {
       setError("");
       setSuccessMessage("");
       await updateRecord("customers", "Customer_ID", customerId, editFormData);
+      await updateCustomerACUnitSalesChannels(
+        customerId,
+        editFormData.Sales_Channel,
+        acUnits
+      );
       setSuccessMessage("Customer updated successfully.");
       closeEditModal();
       await loadCustomers();
@@ -120,12 +130,9 @@ function Customers() {
       const searchPhone = normalizePhoneSearchQuery(searchQuery);
       const customerPhone = normalizePhone(phone);
       
-      // Get sales channel - try multiple field name variations
-      let salesChannel = customer.Sales_Channel || customer.sales_channel || "Showroom";
-      if (salesChannel === "-") {
-        salesChannel = "Showroom";
-      }
-      salesChannel = String(salesChannel).toLowerCase().trim();
+      const salesChannel = getCustomerSalesChannel(customer, acUnits)
+        .toLowerCase()
+        .trim();
 
       // Check if search query matches
       const matchesSearch =
@@ -204,7 +211,7 @@ function Customers() {
           const googleMapLink = getValue(customer, ["Google_Map_Link", "Google_Map_Li", "Google Map Link", "googleMapLink"]);
           const createdDate = getValue(customer, ["Created_Date", "Created Date", "createdDate"]);
           const notes = getValue(customer, ["Notes", "notes"]);
-          const salesChannel = getValue(customer, ["Sales_Channel", "sales_channel"]) || "Showroom";
+          const salesChannel = getCustomerSalesChannel(customer, acUnits);
 
           const id = customerId !== "-" ? customerId : index;
           const isExpanded = expandedId === id;
@@ -370,6 +377,40 @@ function formatDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
   return date.toLocaleDateString("en-GB");
+}
+
+async function updateCustomerACUnitSalesChannels(customerId, salesChannel, acUnits) {
+  const matchingUnits = acUnits.filter(
+    (unit) => normalizeValue(unit.Customer_ID) === normalizeValue(customerId)
+  );
+
+  await Promise.all(
+    matchingUnits.map((unit) =>
+      updateRecord("acUnits", "AC_ID", unit.AC_ID, {
+        Sales_Channel: salesChannel,
+      })
+    )
+  );
+}
+
+function getCustomerSalesChannel(customer, acUnits) {
+  const customerChannel = customer.Sales_Channel || customer.sales_channel;
+
+  if (customerChannel && customerChannel !== "-") {
+    return customerChannel;
+  }
+
+  const customerId =
+    customer.Customer_ID || customer.customer_ID || customer["Customer ID"] || customer.id;
+  const matchingUnit = acUnits.find(
+    (unit) => normalizeValue(unit.Customer_ID) === normalizeValue(customerId)
+  );
+
+  return matchingUnit?.Sales_Channel || "Showroom";
+}
+
+function normalizeValue(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
 function formatDateForInput(value) {

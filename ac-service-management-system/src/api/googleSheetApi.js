@@ -1,8 +1,4 @@
 import {
-  mergePaymentEvidenceCache,
-  mergePaymentEvidenceCacheIntoProfile,
-} from "../utils/paymentEvidenceStore";
-import {
   sortCustomerProfileDescending,
   sortDashboardDataDescending,
   sortRecordsDescending,
@@ -29,10 +25,7 @@ export async function getAllData(type) {
     throw new Error(result.message || "Failed to load data");
   }
 
-  const data =
-    type === "payments" ? mergePaymentEvidenceCache(result.data) : result.data;
-
-  return sortRecordsDescending(type, data);
+  return sortRecordsDescending(type, result.data);
 }
 
 export async function getCustomerProfile(customerId) {
@@ -46,9 +39,7 @@ export async function getCustomerProfile(customerId) {
     throw new Error(result.message || "Failed to load customer profile");
   }
 
-  return sortCustomerProfileDescending(
-    mergePaymentEvidenceCacheIntoProfile(result.data)
-  );
+  return sortCustomerProfileDescending(result.data);
 }
 
 export async function addSale(saleData) {
