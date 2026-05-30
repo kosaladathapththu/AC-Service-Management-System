@@ -141,7 +141,7 @@ function Dashboard() {
         />
 
         <DashboardActionCard
-          title="Not Installed Units"
+          title="Pending Installed Units"
           value={notInstalledCount}
           note="Sold units waiting for installation"
           link="/ac-units?filter=not-installed"
