@@ -27,6 +27,7 @@ function Services() {
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedId, setExpandedId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateOrder, setDateOrder] = useState("upcoming");
   const [profileLoadingId, setProfileLoadingId] = useState("");
   const [selectedProfile, setSelectedProfile] = useState(null);
 
@@ -161,7 +162,14 @@ function Services() {
 
     return true;
   });
-  const serviceCustomerGroups = getCustomerServiceGroups(filteredServices, customers);
+  const isPendingDateList = activeFilter === "pending";
+  const sortedServices = sortServicesByDate(
+    filteredServices,
+    isPendingDateList ? "upcoming" : dateOrder
+  );
+  const serviceCustomerGroups = isPendingDateList
+    ? getPendingServiceDateGroup(sortedServices)
+    : getCustomerServiceGroups(sortedServices, customers);
   const selectedYearFilter = [
     "year-1",
     "year-2",
@@ -442,6 +450,23 @@ function Services() {
               <option value="other-services">Other</option>
             </select>
           </div>
+
+          <div className="service-filter-group service-filter-select-group">
+            <label className="service-filter-label" htmlFor="service-date-order">
+              Date Order
+            </label>
+            <select
+              id="service-date-order"
+              className="service-filter-select"
+              value={isPendingDateList ? "upcoming" : dateOrder}
+              disabled={isPendingDateList}
+              onChange={(event) => setDateOrder(event.target.value)}
+            >
+              <option value="upcoming">Nearest first</option>
+              <option value="latest">Latest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -460,7 +485,7 @@ function Services() {
       </div>
 
       <div className="service-customer-groups">
-        {filteredServices.length === 0 && (
+        {sortedServices.length === 0 && (
           <div className="empty-list-card">
             <p>No service records found for this filter.</p>
             <button
@@ -881,6 +906,28 @@ function serviceMatchesSearch(service, customers, query) {
   ]);
 }
 
+function sortServicesByDate(services, dateOrder) {
+  return [...services].sort((a, b) => {
+    const dateA = getDateTime(a.Service_Date);
+    const dateB = getDateTime(b.Service_Date);
+
+    if (dateOrder === "latest") return dateB - dateA;
+    if (dateOrder === "oldest") return dateA - dateB;
+
+    return dateA - dateB;
+  });
+}
+
+function getDateTime(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  return date.getTime();
+}
+
 function ServiceFilterButton({ active, variant = "", onClick, children }) {
   const classNames = [
     "service-filter-btn",
@@ -937,6 +984,25 @@ function getCustomerServiceGroups(services, customers) {
   }));
 }
 
+function getPendingServiceDateGroup(services) {
+  return [
+    {
+      key: "pending-services-by-date",
+      title: "Pending Services by Date",
+      description: "Nearest service date first, then farther dates.",
+      services,
+      statusCounts: {
+        pending: services.filter(
+          (service) => normalizeValue(service.Service_Status) === "pending"
+        ).length,
+        rescheduled: 0,
+        completed: 0,
+        cancelled: 0,
+      },
+    },
+  ];
+}
+
 function getFilterTitle(filter) {
   if (filter === "due-this-month") return "Services Due This Month";
   if (filter === "overdue") return "Overdue Services";
@@ -956,6 +1022,10 @@ function getFilterTitle(filter) {
   if (filter === "high-pressure") return "High-pressure Services";
   if (filter === "other-services") return "Other Services";
   return "All Services";
+}
+
+function normalizeValue(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
 function isCurrentMonth(value) {
