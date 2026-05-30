@@ -14,6 +14,7 @@ import {
 } from "../utils/customerDisplay";
 import { getPaymentEvidence } from "../utils/paymentEvidence";
 import { hasAnnualServicePaymentForYear } from "../utils/paymentRules";
+import { ensureAnnualPaymentServices } from "../utils/annualServiceGeneration";
 import { recordMatchesSearch } from "../utils/recordSearch";
 
 function Payments() {
@@ -200,6 +201,13 @@ function Payments() {
         editFormData
       );
 
+      if (
+        editFormData.Payment_Type === "Annual Service" &&
+        editFormData.Payment_Status === "Paid"
+      ) {
+        await ensureAnnualPaymentServices(updatedPayment);
+      }
+
       setSuccessMessage("Payment updated successfully.");
       closeEditModal();
       await loadPayments();
@@ -273,6 +281,8 @@ function Payments() {
         Payment_Status: updatedPayment.Payment_Status,
         Payment_Date: updatedPayment.Payment_Date,
       });
+
+      await ensureAnnualPaymentServices(updatedPayment);
 
       setSuccessMessage("Payment marked as paid successfully.");
       await loadPayments();

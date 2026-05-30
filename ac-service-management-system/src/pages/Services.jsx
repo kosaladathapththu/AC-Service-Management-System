@@ -80,6 +80,8 @@ function Services() {
   const filteredServices = services.filter((service) => {
     const status = String(service.Service_Status || "").toLowerCase();
     const type = String(service.Service_Type || "").toLowerCase();
+    const year = String(service.Service_Year || "").toLowerCase();
+    const category = String(service.Service_Category || "").toLowerCase();
 
     if (!serviceMatchesSearch(service, customers, searchQuery)) return false;
 
@@ -121,9 +123,61 @@ function Services() {
       return type === "paid";
     }
 
+    if (activeFilter === "paid-annual") {
+      return type === "paid" && ["year 2", "year 3", "year 4", "year 5"].includes(year);
+    }
+
+    if (activeFilter === "year-1") {
+      return year === "year 1";
+    }
+
+    if (activeFilter === "year-2") {
+      return year === "year 2";
+    }
+
+    if (activeFilter === "year-3") {
+      return year === "year 3";
+    }
+
+    if (activeFilter === "year-4") {
+      return year === "year 4";
+    }
+
+    if (activeFilter === "year-5") {
+      return year === "year 5";
+    }
+
+    if (activeFilter === "normal") {
+      return category === "normal";
+    }
+
+    if (activeFilter === "high-pressure") {
+      return category === "high-pressure";
+    }
+
+    if (activeFilter === "other-services") {
+      return category && !["normal", "high-pressure"].includes(category);
+    }
+
     return true;
   });
   const serviceCustomerGroups = getCustomerServiceGroups(filteredServices, customers);
+  const selectedYearFilter = [
+    "year-1",
+    "year-2",
+    "year-3",
+    "year-4",
+    "year-5",
+  ].includes(activeFilter)
+    ? activeFilter
+    : "";
+  const selectedCategoryFilter = [
+    "normal",
+    "high-pressure",
+    "other-services",
+  ].includes(activeFilter)
+    ? activeFilter
+    : "";
 
   function toggleExpand(serviceId) {
     setExpandedId((prev) => (prev === serviceId ? null : serviceId));
@@ -282,94 +336,112 @@ function Services() {
           <p>{filteredServices.length} service record(s) found</p>
         </div>
 
-        <div className="service-filter-actions">
-          <button
-            className={
-              activeFilter === "all"
-                ? "service-filter-btn active"
-                : "service-filter-btn"
-            }
-            onClick={() => changeFilter("all")}
-          >
-            All
-          </button>
+        <div className="service-filter-actions service-filter-toolbar">
+          <div className="service-filter-group">
+            <span className="service-filter-label">Status</span>
+            <div className="service-filter-options">
+              <ServiceFilterButton
+                active={activeFilter === "all"}
+                onClick={() => changeFilter("all")}
+              >
+                All
+              </ServiceFilterButton>
+              <ServiceFilterButton
+                active={activeFilter === "due-this-month"}
+                onClick={() => changeFilter("due-this-month")}
+              >
+                Due This Month
+              </ServiceFilterButton>
+              <ServiceFilterButton
+                active={activeFilter === "overdue"}
+                variant="danger"
+                onClick={() => changeFilter("overdue")}
+              >
+                Overdue
+              </ServiceFilterButton>
+              <ServiceFilterButton
+                active={activeFilter === "pending"}
+                onClick={() => changeFilter("pending")}
+              >
+                Pending
+              </ServiceFilterButton>
+              <ServiceFilterButton
+                active={activeFilter === "completed"}
+                variant="success"
+                onClick={() => changeFilter("completed")}
+              >
+                Completed
+              </ServiceFilterButton>
+              <ServiceFilterButton
+                active={activeFilter === "rescheduled"}
+                variant="warning"
+                onClick={() => changeFilter("rescheduled")}
+              >
+                Rescheduled
+              </ServiceFilterButton>
+            </div>
+          </div>
 
-          <button
-            className={
-              activeFilter === "due-this-month"
-                ? "service-filter-btn active"
-                : "service-filter-btn"
-            }
-            onClick={() => changeFilter("due-this-month")}
-          >
-            Due This Month
-          </button>
+          <div className="service-filter-group">
+            <span className="service-filter-label">Type</span>
+            <div className="service-filter-options">
+              <ServiceFilterButton
+                active={activeFilter === "free"}
+                variant="success"
+                onClick={() => changeFilter("free")}
+              >
+                Free
+              </ServiceFilterButton>
+              <ServiceFilterButton
+                active={activeFilter === "paid"}
+                onClick={() => changeFilter("paid")}
+              >
+                Paid
+              </ServiceFilterButton>
+              <ServiceFilterButton
+                active={activeFilter === "paid-annual"}
+                onClick={() => changeFilter("paid-annual")}
+              >
+                Paid Annual
+              </ServiceFilterButton>
+            </div>
+          </div>
 
-          <button
-            className={
-              activeFilter === "overdue"
-                ? "service-filter-btn active danger"
-                : "service-filter-btn"
-            }
-            onClick={() => changeFilter("overdue")}
-          >
-            Overdue
-          </button>
+          <div className="service-filter-group service-filter-select-group">
+            <label className="service-filter-label" htmlFor="service-year-filter">
+              Year
+            </label>
+            <select
+              id="service-year-filter"
+              className="service-filter-select"
+              value={selectedYearFilter}
+              onChange={(event) => changeFilter(event.target.value || "all")}
+            >
+              <option value="">All years</option>
+              <option value="year-1">Year 1</option>
+              <option value="year-2">Year 2</option>
+              <option value="year-3">Year 3</option>
+              <option value="year-4">Year 4</option>
+              <option value="year-5">Year 5</option>
+            </select>
+          </div>
 
-          <button
-            className={
-              activeFilter === "pending"
-                ? "service-filter-btn active"
-                : "service-filter-btn"
-            }
-            onClick={() => changeFilter("pending")}
-          >
-            Pending
-          </button>
-
-          <button
-            className={
-              activeFilter === "completed"
-                ? "service-filter-btn active success"
-                : "service-filter-btn"
-            }
-            onClick={() => changeFilter("completed")}
-          >
-            Completed
-          </button>
-
-          <button
-            className={
-              activeFilter === "rescheduled"
-                ? "service-filter-btn active warning"
-                : "service-filter-btn"
-            }
-            onClick={() => changeFilter("rescheduled")}
-          >
-            Rescheduled
-          </button>
-
-          <button
-            className={
-              activeFilter === "free"
-                ? "service-filter-btn active success"
-                : "service-filter-btn"
-            }
-            onClick={() => changeFilter("free")}
-          >
-            Free
-          </button>
-
-          <button
-            className={
-              activeFilter === "paid"
-                ? "service-filter-btn active"
-                : "service-filter-btn"
-            }
-            onClick={() => changeFilter("paid")}
-          >
-            Paid
-          </button>
+          <div className="service-filter-group service-filter-select-group">
+            <label className="service-filter-label" htmlFor="service-category-filter">
+              Category
+            </label>
+            <select
+              id="service-category-filter"
+              className="service-filter-select"
+              value={selectedCategoryFilter}
+              onChange={(event) => changeFilter(event.target.value || "all")}
+            >
+              <option value="">All categories</option>
+              <option value="normal">Normal</option>
+              <option value="high-pressure">High-pressure</option>
+              <option value="other-services">Other</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -378,7 +450,7 @@ function Services() {
           type="search"
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder="Search services by customer, AC, ID, status, technician..."
+          placeholder="Search services by customer, AC, ID, year, type, category, status, technician..."
         />
         {searchQuery && (
           <button type="button" onClick={() => setSearchQuery("")}>
@@ -501,6 +573,12 @@ function Services() {
                     {service.Service_No && (
                       <span className="status-badge status-neutral">
                         Service {service.Service_No}
+                      </span>
+                    )}
+
+                    {service.Service_Category && (
+                      <span className="status-badge status-neutral">
+                        {service.Service_Category}
                       </span>
                     )}
 
@@ -803,6 +881,22 @@ function serviceMatchesSearch(service, customers, query) {
   ]);
 }
 
+function ServiceFilterButton({ active, variant = "", onClick, children }) {
+  const classNames = [
+    "service-filter-btn",
+    active ? "active" : "",
+    active && variant ? variant : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <button type="button" className={classNames} onClick={onClick}>
+      {children}
+    </button>
+  );
+}
+
 function getCustomerServiceGroups(services, customers) {
   const groupMap = new Map();
 
@@ -852,6 +946,15 @@ function getFilterTitle(filter) {
   if (filter === "cancelled") return "Cancelled Services";
   if (filter === "free") return "Free Services";
   if (filter === "paid") return "Paid Services";
+  if (filter === "paid-annual") return "Paid Annual Services";
+  if (filter === "year-1") return "Year 1 Services";
+  if (filter === "year-2") return "Year 2 Services";
+  if (filter === "year-3") return "Year 3 Services";
+  if (filter === "year-4") return "Year 4 Services";
+  if (filter === "year-5") return "Year 5 Services";
+  if (filter === "normal") return "Normal Services";
+  if (filter === "high-pressure") return "High-pressure Services";
+  if (filter === "other-services") return "Other Services";
   return "All Services";
 }
 

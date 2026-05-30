@@ -3755,6 +3755,57 @@ button.view-link:disabled {
   justify-content: flex-end;
 }
 
+.service-filter-toolbar {
+  align-items: stretch;
+  gap: 12px;
+}
+
+.service-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  background: #F9FAFB;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.service-filter-label {
+  color: #6B7280;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.service-filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.service-filter-select-group {
+  min-width: 150px;
+}
+
+.service-filter-select {
+  min-height: 35px;
+  border: 1px solid #D1D5DB;
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: #374151;
+  padding: 0 34px 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.service-filter-select:focus {
+  outline: none;
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
 .service-filter-btn {
   border: 1px solid #d1d5db;
   background: #ffffff;

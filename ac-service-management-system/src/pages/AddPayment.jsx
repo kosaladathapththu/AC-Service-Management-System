@@ -9,6 +9,7 @@ import {
   getPurchasedAnnualServiceYears,
   hasAnnualServicePaymentForYear,
 } from "../utils/paymentRules";
+import { ensureAnnualPaymentServices } from "../utils/annualServiceGeneration";
 
 const PAYMENT_YEARS = ["Year 1", "Year 2", "Year 3", "Year 4", "Year 5"];
 
@@ -237,6 +238,10 @@ function AddPayment() {
       }
 
       const result = await addPayment(formData);
+      const generatedServices = await ensureAnnualPaymentServices({
+        ...formData,
+        Payment_ID: result.paymentId || result.Payment_ID,
+      });
       setPayments((previousPayments) => [
         ...previousPayments,
         {
@@ -262,7 +267,9 @@ function AddPayment() {
       const annualMessage =
         formData.Payment_Type === "Annual Service" &&
         formData.Payment_Status === "Paid"
-          ? ` ${formData.Annual_Service_Count} annual service(s) will be generated.`
+          ? ` ${
+              generatedServices.length || formData.Annual_Service_Count
+            } annual service(s) available in Services.`
           : "";
 
       setSuccessMessage(
