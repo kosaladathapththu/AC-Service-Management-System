@@ -7,6 +7,7 @@ import { getPaymentEvidence } from "../utils/paymentEvidence";
 function Dashboard() {
   const [dashboardData, setDashboardData] = useState(null);
   const [customers, setCustomers] = useState([]);
+  const [notInstalledCount, setNotInstalledCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
   const [error, setError] = useState("");
@@ -22,13 +23,20 @@ function Dashboard() {
       setLoading(true);
       setError("");
 
-      const [data, customersData] = await Promise.all([
+      const [data, customersData, acUnitsData, installationsData] = await Promise.all([
         getDashboardData(),
         getAllData("customers"),
+        getAllData("acUnits"),
+        getAllData("installations"),
       ]);
 
       setDashboardData(data);
       setCustomers(customersData);
+      setNotInstalledCount(
+        acUnitsData.filter(
+          (unit) => !isACUnitInstalled(unit.AC_ID, installationsData)
+        ).length
+      );
     } catch (error) {
       setError(error.message);
     } finally {
@@ -130,6 +138,14 @@ function Dashboard() {
           note="Currently valid warranties"
           link="/ac-units?filter=active-warranty"
           type="success"
+        />
+
+        <DashboardActionCard
+          title="Not Installed Units"
+          value={notInstalledCount}
+          note="Sold units waiting for installation"
+          link="/ac-units?filter=not-installed"
+          type="warning"
         />
 
         <DashboardActionCard
@@ -665,6 +681,24 @@ function normalizePhone(value) {
   }
 
   return phone.length > 9 ? phone.slice(-9) : phone;
+}
+
+function isACUnitInstalled(acId, installations) {
+  const cleanAcId = normalizeValue(acId);
+  if (!cleanAcId) return false;
+
+  return installations.some((installation) => {
+    const status = normalizeValue(installation.Installation_Status);
+
+    return (
+      normalizeValue(installation.AC_ID) === cleanAcId &&
+      status !== "cancelled"
+    );
+  });
+}
+
+function normalizeValue(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
 function getWarrantyStatusClass(status) {

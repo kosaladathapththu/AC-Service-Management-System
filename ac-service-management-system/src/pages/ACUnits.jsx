@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   getAllData,
   getCustomerProfile,
@@ -18,6 +18,7 @@ function ACUnits() {
 
   const [acUnits, setAcUnits] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [installations, setInstallations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -49,13 +50,15 @@ function ACUnits() {
       setLoading(true);
       setError("");
 
-      const [acUnitsData, customersData] = await Promise.all([
+      const [acUnitsData, customersData, installationsData] = await Promise.all([
         getAllData("acUnits"),
         getAllData("customers"),
+        getAllData("installations"),
       ]);
 
       setAcUnits(acUnitsData);
       setCustomers(customersData);
+      setInstallations(installationsData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -98,6 +101,10 @@ function ACUnits() {
 
     if (activeFilter === "online") {
       return salesChannel === "online";
+    }
+
+    if (activeFilter === "not-installed") {
+      return !isACUnitInstalled(unit.AC_ID, installations);
     }
 
     return true;
@@ -270,6 +277,17 @@ function ACUnits() {
           >
             Online
           </button>
+
+          <button
+            className={
+              activeFilter === "not-installed"
+                ? "ac-filter-btn active warning"
+                : "ac-filter-btn"
+            }
+            onClick={() => changeFilter("not-installed")}
+          >
+            Not Installed
+          </button>
         </div>
       </div>
 
@@ -386,6 +404,12 @@ function ACUnits() {
                       </span>
                     )}
 
+                    {!isACUnitInstalled(unit.AC_ID, installations) && (
+                      <span className="status-badge status-expired">
+                        Not Installed
+                      </span>
+                    )}
+
                     <span
                       className="record-date"
                       style={{ fontSize: "12px", color: "#6B7280" }}
@@ -406,6 +430,17 @@ function ACUnits() {
                   >
                     Edit
                   </button>
+
+                  {!isACUnitInstalled(unit.AC_ID, installations) && (
+                    <Link
+                      className="install-action-btn"
+                      to={`/add-installation?customerId=${encodeURIComponent(
+                        unit.Customer_ID || ""
+                      )}&acId=${encodeURIComponent(unit.AC_ID || "")}`}
+                    >
+                      Start Installation
+                    </Link>
+                  )}
 
                   <button
                     className="view-link"
@@ -694,7 +729,26 @@ function getFilterTitle(filter) {
   if (filter === "expired-warranty") return "Expired Warranty AC Units";
   if (filter === "showroom") return "Showroom Sales";
   if (filter === "online") return "Online Sales";
+  if (filter === "not-installed") return "Not Installed AC Units";
   return "All AC Units";
+}
+
+function isACUnitInstalled(acId, installations) {
+  const cleanAcId = normalizeValue(acId);
+  if (!cleanAcId) return false;
+
+  return installations.some((installation) => {
+    const status = normalizeValue(installation.Installation_Status);
+
+    return (
+      normalizeValue(installation.AC_ID) === cleanAcId &&
+      status !== "cancelled"
+    );
+  });
+}
+
+function normalizeValue(value) {
+  return String(value || "").trim().toLowerCase();
 }
 
 function formatDate(value) {

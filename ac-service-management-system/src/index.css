@@ -3077,6 +3077,23 @@ button.view-link:disabled {
   font-size: 12px;
 }
 
+.record-actions .install-action-btn {
+  background: #F59E0B;
+  color: #FFFFFF;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.record-actions .install-action-btn:hover {
+  background: #D97706;
+}
+
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .record-card-main {

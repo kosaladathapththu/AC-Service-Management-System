@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { addInstallation, getAllData } from "../api/googleSheetApi";
 import CustomerSearchSelect, {
   getFilteredCustomers,
 } from "../components/CustomerSearchSelect";
 
 function AddInstallation() {
+  const [searchParams] = useSearchParams();
+  const preselectedCustomerId = searchParams.get("customerId") || "";
+  const preselectedAcId = searchParams.get("acId") || "";
   const today = new Date().toISOString().split("T")[0];
 
   const emptyForm = {
@@ -51,6 +54,36 @@ function AddInstallation() {
       setCustomers(customersData);
       setAcUnits(acUnitsData);
       setInstallations(installationsData);
+
+      if (preselectedCustomerId) {
+        const availableUnits = getUninstalledACUnits(acUnitsData, installationsData).filter(
+          (unit) =>
+            normalizeValue(unit.Customer_ID) ===
+            normalizeValue(preselectedCustomerId)
+        );
+        const selectedCustomer = customersData.find(
+          (customer) =>
+            normalizeValue(getCustomerId(customer)) ===
+            normalizeValue(preselectedCustomerId)
+        );
+
+        setFilteredACUnits(availableUnits);
+        setFormData((prev) => ({
+          ...prev,
+          Customer_ID: preselectedCustomerId,
+          AC_ID: availableUnits.some(
+            (unit) => normalizeValue(unit.AC_ID) === normalizeValue(preselectedAcId)
+          )
+            ? preselectedAcId
+            : "",
+        }));
+
+        if (selectedCustomer) {
+          setCustomerSearch(
+            `${preselectedCustomerId} - ${getCustomerName(selectedCustomer)}`
+          );
+        }
+      }
     } catch (err) {
       setError(err.message);
     } finally {
