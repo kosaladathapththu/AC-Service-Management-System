@@ -195,3 +195,21 @@ export async function checkDuplicateCustomer(phone) {
 
   return result.data;
 }
+
+export async function syncCompanySheet() {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "syncCompanySheet",
+      data: {},
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(result.message || "Company sheet sync failed.");
+  }
+
+  return result.data;
+}

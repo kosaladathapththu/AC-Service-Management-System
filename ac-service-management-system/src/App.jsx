@@ -14,6 +14,7 @@ import AddSale from "./pages/AddSale";
 import AddInstallation from "./pages/AddInstallation";
 import AddService from "./pages/AddService";
 import AddComplaint from "./pages/AddComplaint";
+import DataSync from "./pages/DataSync";
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
           <Route path="payments" element={<Payments />} />
           <Route path="add-complaint" element={<AddComplaint />} />
           <Route path="complaints" element={<Complaints />} />
+          <Route path="/data-sync" element={<DataSync />} />
         </Route>
       </Routes>
     </BrowserRouter>
