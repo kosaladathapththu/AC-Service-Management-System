@@ -22,7 +22,7 @@ function Services() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sendingReminderId, setSendingReminderId] = useState("");
-  const [markingCompletedId, setMarkingCompletedId] = useState("");
+  const [markingCompletedIds, setMarkingCompletedIds] = useState([]);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedId, setExpandedId] = useState(null);
@@ -256,9 +256,15 @@ function Services() {
         editFormData
       );
 
+      setServices((prev) =>
+        prev.map((service) =>
+          service.Service_ID === editingService.Service_ID
+            ? { ...service, ...editFormData }
+            : service
+        )
+      );
       setSuccessMessage("Service updated successfully.");
       closeEditModal();
-      await loadServices();
     } catch (error) {
       setError(error.message);
     } finally {
@@ -306,7 +312,9 @@ function Services() {
     event.stopPropagation();
 
     try {
-      setMarkingCompletedId(service.Service_ID);
+      setMarkingCompletedIds((prev) =>
+        prev.includes(service.Service_ID) ? prev : [...prev, service.Service_ID]
+      );
       setError("");
       setSuccessMessage("");
 
@@ -314,12 +322,20 @@ function Services() {
         Service_Status: "Completed",
       });
 
+      setServices((prev) =>
+        prev.map((item) =>
+          item.Service_ID === service.Service_ID
+            ? { ...item, Service_Status: "Completed" }
+            : item
+        )
+      );
       setSuccessMessage("Service marked as completed successfully.");
-      await loadServices();
     } catch (error) {
       setError(error.message);
     } finally {
-      setMarkingCompletedId("");
+      setMarkingCompletedIds((prev) =>
+        prev.filter((serviceId) => serviceId !== service.Service_ID)
+      );
     }
   }
 
@@ -628,9 +644,11 @@ function Services() {
                     <button
                       className="mark-completed-btn"
                       onClick={(event) => handleMarkCompleted(service, event)}
-                      disabled={markingCompletedId === service.Service_ID}
+                      disabled={markingCompletedIds.includes(
+                        service.Service_ID
+                      )}
                     >
-                      {markingCompletedId === service.Service_ID
+                      {markingCompletedIds.includes(service.Service_ID)
                         ? "Updating..."
                         : "Mark Completed"}
                     </button>

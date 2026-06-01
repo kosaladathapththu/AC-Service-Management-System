@@ -114,9 +114,15 @@ function Installations() {
       setError("");
       setSuccessMessage("");
       await updateRecord("installations", "Installation_ID", editingInstallation.Installation_ID, editFormData);
+      setInstallations((prev) =>
+        prev.map((installation) =>
+          installation.Installation_ID === editingInstallation.Installation_ID
+            ? { ...installation, ...editFormData }
+            : installation
+        )
+      );
       setSuccessMessage("Installation updated successfully.");
       closeEditModal();
-      await loadInstallations();
     } catch (error) {
       setError(error.message);
     } finally {
@@ -126,6 +132,7 @@ function Installations() {
 
   async function handleMarkCompleted(installation, event) {
     event.stopPropagation();
+    const completedDate = new Date().toISOString().split("T")[0];
 
     try {
       setMarkingCompletedId(installation.Installation_ID);
@@ -138,12 +145,22 @@ function Installations() {
         installation.Installation_ID,
         {
           Installation_Status: "Completed",
-          Installation_Date: new Date().toISOString().split("T")[0],
+          Installation_Date: completedDate,
         }
       );
 
+      setInstallations((prev) =>
+        prev.map((item) =>
+          item.Installation_ID === installation.Installation_ID
+            ? {
+                ...item,
+                Installation_Status: "Completed",
+                Installation_Date: completedDate,
+              }
+            : item
+        )
+      );
       setSuccessMessage("Installation marked as completed successfully.");
-      await loadInstallations();
     } catch (error) {
       setError(error.message);
     } finally {

@@ -206,11 +206,18 @@ function Payments() {
         editFormData.Payment_Status === "Paid"
       ) {
         await ensureAnnualPaymentServices(updatedPayment);
+        updatedPayment.Service_Generated = "Yes";
       }
 
+      setPayments((prev) =>
+        prev.map((payment) =>
+          payment.Payment_ID === editingPayment.Payment_ID
+            ? updatedPayment
+            : payment
+        )
+      );
       setSuccessMessage("Payment updated successfully.");
       closeEditModal();
-      await loadPayments();
     } catch (error) {
       setError(error.message);
     } finally {
@@ -284,8 +291,23 @@ function Payments() {
 
       await ensureAnnualPaymentServices(updatedPayment);
 
+      setPayments((prev) =>
+        prev.map((item) =>
+          item.Payment_ID === payment.Payment_ID
+            ? {
+                ...item,
+                Payment_Status: updatedPayment.Payment_Status,
+                Payment_Date: updatedPayment.Payment_Date,
+                Service_Generated:
+                  String(item.Payment_Type || "").toLowerCase() ===
+                  "annual service"
+                    ? "Yes"
+                    : item.Service_Generated,
+              }
+            : item
+        )
+      );
       setSuccessMessage("Payment marked as paid successfully.");
-      await loadPayments();
     } catch (error) {
       setError(error.message);
     } finally {

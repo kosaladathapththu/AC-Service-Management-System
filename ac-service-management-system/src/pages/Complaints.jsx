@@ -194,9 +194,15 @@ function Complaints() {
         editFormData
       );
 
+      setComplaints((prev) =>
+        prev.map((complaint) =>
+          complaint.Complaint_ID === editingComplaint.Complaint_ID
+            ? { ...complaint, ...editFormData }
+            : complaint
+        )
+      );
       setSuccessMessage("Complaint updated successfully.");
       closeEditModal();
-      await loadComplaints();
     } catch (error) {
       setError(error.message);
     } finally {
