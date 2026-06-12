@@ -25,9 +25,9 @@ export const SYSTEM_DATABASE_SHEET = {
 };
 
 export const APPS_SCRIPT_PROJECT = {
-  projectId: "19OESW--G25zO0FQ-_SgXakNN4jyVMsr5WwFtN0XDPH9dnDJ-_Lz002c3",
+  projectId: "1-bAlKswW1xmnhyGqCn9DYdM-QYHZFYCVK3RWpLXK6MCIYOAyS-iQWFow",
   editorUrl:
-    "https://script.google.com/u/0/home/projects/19OESW--G25zO0FQ-_SgXakNN4jyVMsr5WwFtN0XDPH9dnDJ-_Lz002c3/edit",
+    "https://script.google.com/u/0/home/projects/1-bAlKswW1xmnhyGqCn9DYdM-QYHZFYCVK3RWpLXK6MCIYOAyS-iQWFow/edit",
   webAppUrl:
     "https://script.google.com/macros/s/AKfycbzKJjSjtpogfOuDxYwet97iBEYnr3_1Jg0xX4GjxzmKU-jhPsG6DCAJ9XHzeADHKvjv/exec",
 };

@@ -262,8 +262,12 @@ function AddSale() {
 
     if (foundCustomer) return foundCustomer;
 
-    const apiDuplicate = await checkDuplicateCustomer(phone);
-    return normalizeDuplicateCustomer(apiDuplicate);
+    try {
+      const apiDuplicate = await checkDuplicateCustomer(phone);
+      return normalizeDuplicateCustomer(apiDuplicate);
+    } catch {
+      return null;
+    }
   }
 
   const filteredCustomers = getFilteredCustomers(
