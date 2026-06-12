@@ -9,10 +9,25 @@ function DataSync() {
   const [error, setError] = useState("");
   const [syncDetails, setSyncDetails] = useState([]);
   const [logs, setLogs] = useState([]);
+  const [selectedSourceKeys, setSelectedSourceKeys] = useState(
+    SOURCE_SHEETS.map((sheet) => sheet.key)
+  );
+
+  const selectedSourceSheets = SOURCE_SHEETS.filter((sheet) =>
+    selectedSourceKeys.includes(sheet.key)
+  );
 
   async function handleSync() {
+    if (selectedSourceSheets.length === 0) {
+      setError("Select at least one source sheet to sync.");
+      return;
+    }
+
+    const selectedSourceLabels = selectedSourceSheets
+      .map((sheet) => sheet.label)
+      .join(" and ");
     const confirmSync = window.confirm(
-      "This will sync data from the Online Orders and Showroom source sheets into the system database. Continue?"
+      `This will sync data from ${selectedSourceLabels} into the system database. Continue?`
     );
 
     if (!confirmSync) return;
@@ -23,7 +38,7 @@ function DataSync() {
       setError("");
       setSyncDetails([]);
 
-      const result = await syncCompanySheet(SOURCE_SHEETS);
+      const result = await syncCompanySheet(selectedSourceSheets);
 
       setSuccessMessage(result.message || "Company sheet synced successfully.");
       setSyncDetails(result.details || []);
@@ -48,6 +63,17 @@ function DataSync() {
     } finally {
       setLoadingLogs(false);
     }
+  }
+
+  function toggleSource(sourceKey) {
+    setSelectedSourceKeys((currentKeys) => {
+      if (currentKeys.includes(sourceKey)) {
+        return currentKeys.filter((key) => key !== sourceKey);
+      }
+
+      return [...currentKeys, sourceKey];
+    });
+    setError("");
   }
 
   return (
@@ -79,8 +105,8 @@ function DataSync() {
       <div className="sync-action-card">
         <h3>Company Sheet Sync</h3>
         <p>
-          Click the button below to import customers, AC units, services, and
-          payments from the Online Orders and Showroom source sheets.
+          Select one or more sources, then import customers, AC units,
+          services, and payments into the system database.
         </p>
 
         <div className="sync-source-list">
@@ -94,26 +120,50 @@ function DataSync() {
             <small>Database</small>
           </a>
 
-          {SOURCE_SHEETS.map((sheet) => (
-            <a
+          {SOURCE_SHEETS.map((sheet) => {
+            const isSelected = selectedSourceKeys.includes(sheet.key);
+
+            return (
+            <label
               key={sheet.key}
-              className="sync-source-link"
-              href={sheet.url}
-              target="_blank"
-              rel="noreferrer"
+              className={
+                isSelected
+                  ? "sync-source-link sync-source-option selected"
+                  : "sync-source-link sync-source-option"
+              }
             >
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() => toggleSource(sheet.key)}
+                disabled={syncing}
+              />
               <span>{sheet.label}</span>
               <small>{sheet.channel}</small>
-            </a>
-          ))}
+              <a
+                href={sheet.url}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(event) => event.stopPropagation()}
+                aria-label={`Open ${sheet.label}`}
+              >
+                Open
+              </a>
+            </label>
+            );
+          })}
         </div>
 
         <button
           className="primary-sync-btn"
           onClick={handleSync}
-          disabled={syncing}
+          disabled={syncing || selectedSourceSheets.length === 0}
         >
-          {syncing ? "Syncing..." : "Sync Company Sheet"}
+          {syncing
+            ? "Syncing..."
+            : selectedSourceSheets.length === SOURCE_SHEETS.length
+              ? "Sync Selected Sheets"
+              : `Sync ${selectedSourceSheets[0]?.label || "Selected Sheets"}`}
         </button>
 
         <button

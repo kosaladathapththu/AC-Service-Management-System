@@ -3808,6 +3808,39 @@ button.view-link:disabled {
   font-weight: 700;
 }
 
+.sync-source-option {
+  cursor: pointer;
+}
+
+.sync-source-option.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.sync-source-option input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #2563eb;
+}
+
+.sync-source-option span {
+  flex: 1 1 auto;
+}
+
+.sync-source-option a {
+  flex: 0 0 auto;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.sync-source-option a:hover {
+  text-decoration: underline;
+}
+
 .primary-sync-btn,
 .secondary-sync-btn {
   display: inline-flex;

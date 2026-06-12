@@ -204,7 +204,10 @@ export async function syncCompanySheet(sourceSheets = []) {
     method: "POST",
     body: JSON.stringify({
       action: "syncCompanySheet",
-      data: { sourceSheets },
+      data: {
+        sourceSheets,
+        selectedSourceKeys: sourceSheets.map((sheet) => sheet.key),
+      },
     }),
   });
 

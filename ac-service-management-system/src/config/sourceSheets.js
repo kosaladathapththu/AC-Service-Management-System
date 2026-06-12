@@ -29,5 +29,5 @@ export const APPS_SCRIPT_PROJECT = {
   editorUrl:
     "https://script.google.com/u/0/home/projects/1-bAlKswW1xmnhyGqCn9DYdM-QYHZFYCVK3RWpLXK6MCIYOAyS-iQWFow/edit",
   webAppUrl:
-    "https://script.google.com/macros/s/AKfycbzKJjSjtpogfOuDxYwet97iBEYnr3_1Jg0xX4GjxzmKU-jhPsG6DCAJ9XHzeADHKvjv/exec",
+    "https://script.google.com/macros/s/AKfycbw4Mio281NSmE3qI1JIoDrncxweizjLdAPiN-aqoHq9bbiMnofl2biVKue-P3tFH9fF/exec",
 };
