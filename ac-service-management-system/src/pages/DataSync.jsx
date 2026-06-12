@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { syncCompanySheet, getAllData } from "../api/googleSheetApi";
+import { SOURCE_SHEETS, SYSTEM_DATABASE_SHEET } from "../config/sourceSheets";
 
 function DataSync() {
   const [syncing, setSyncing] = useState(false);
@@ -11,7 +12,7 @@ function DataSync() {
 
   async function handleSync() {
     const confirmSync = window.confirm(
-      "This will sync data from the company source sheet into the system database. Continue?"
+      "This will sync data from the Online Orders and Showroom source sheets into the system database. Continue?"
     );
 
     if (!confirmSync) return;
@@ -22,7 +23,7 @@ function DataSync() {
       setError("");
       setSyncDetails([]);
 
-      const result = await syncCompanySheet();
+      const result = await syncCompanySheet(SOURCE_SHEETS);
 
       setSuccessMessage(result.message || "Company sheet synced successfully.");
       setSyncDetails(result.details || []);
@@ -65,13 +66,13 @@ function DataSync() {
       <div className="sync-info-card">
         <h3>Sync Flow</h3>
         <p>
-          Existing Company Sheet - Import Process - System Database - React
-          Dashboard
+          Online Orders + Showroom Sheets - Import Process - System Database -
+          React Dashboard
         </p>
 
         <div className="sync-warning">
           <strong>Important:</strong> This is a one-way sync. Data comes from
-          the old company sheet into the new system database.
+          the Google source sheets into the new system database.
         </div>
       </div>
 
@@ -79,8 +80,33 @@ function DataSync() {
         <h3>Company Sheet Sync</h3>
         <p>
           Click the button below to import customers, AC units, services, and
-          payments from the company source sheet.
+          payments from the Online Orders and Showroom source sheets.
         </p>
+
+        <div className="sync-source-list">
+          <a
+            className="sync-source-link system-database"
+            href={SYSTEM_DATABASE_SHEET.url}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <span>{SYSTEM_DATABASE_SHEET.label}</span>
+            <small>Database</small>
+          </a>
+
+          {SOURCE_SHEETS.map((sheet) => (
+            <a
+              key={sheet.key}
+              className="sync-source-link"
+              href={sheet.url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>{sheet.label}</span>
+              <small>{sheet.channel}</small>
+            </a>
+          ))}
+        </div>
 
         <button
           className="primary-sync-btn"

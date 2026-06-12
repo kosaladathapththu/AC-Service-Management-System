@@ -1,0 +1,33 @@
+export const SOURCE_SHEETS = [
+  {
+    key: "online",
+    label: "Online Orders",
+    channel: "Online",
+    spreadsheetId: "1hPQxj4XcrbnEp7eirGji8eRbMbjxi4Lb9qiz0BXe-qg",
+    gid: "532120314",
+    url: "https://docs.google.com/spreadsheets/d/1hPQxj4XcrbnEp7eirGji8eRbMbjxi4Lb9qiz0BXe-qg/edit?gid=532120314#gid=532120314",
+  },
+  {
+    key: "showroom",
+    label: "Showroom",
+    channel: "Showroom",
+    spreadsheetId: "1BHp_irxumTPg2qY9Nz6V6WsRm9DjM_bOOi8-XyDwYoQ",
+    gid: "0",
+    url: "https://docs.google.com/spreadsheets/d/1BHp_irxumTPg2qY9Nz6V6WsRm9DjM_bOOi8-XyDwYoQ/edit?gid=0#gid=0",
+  },
+];
+
+export const SYSTEM_DATABASE_SHEET = {
+  label: "System Database",
+  spreadsheetId: "1ED6NXaLWpPxK0RJy7f4gIUqbyPNB9LHGIyedbU6VOuE",
+  gid: "1879932290",
+  url: "https://docs.google.com/spreadsheets/d/1ED6NXaLWpPxK0RJy7f4gIUqbyPNB9LHGIyedbU6VOuE/edit?gid=1879932290#gid=1879932290",
+};
+
+export const APPS_SCRIPT_PROJECT = {
+  projectId: "19OESW--G25zO0FQ-_SgXakNN4jyVMsr5WwFtN0XDPH9dnDJ-_Lz002c3",
+  editorUrl:
+    "https://script.google.com/u/0/home/projects/19OESW--G25zO0FQ-_SgXakNN4jyVMsr5WwFtN0XDPH9dnDJ-_Lz002c3/edit",
+  webAppUrl:
+    "https://script.google.com/macros/s/AKfycbwWbe_nB0VaBJw3A23vjbXaDNHUrBeSqcyKnnhOe26UAarOq6Ga-HtOv2Qfwj1fPZYV/exec",
+};

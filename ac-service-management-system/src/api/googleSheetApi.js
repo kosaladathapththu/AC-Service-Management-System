@@ -3,8 +3,11 @@ import {
   sortDashboardDataDescending,
   sortRecordsDescending,
 } from "../utils/recordSort";
+import { APPS_SCRIPT_PROJECT } from "../config/sourceSheets";
 
-const API_URL = "https://script.google.com/macros/s/AKfycbwWbe_nB0VaBJw3A23vjbXaDNHUrBeSqcyKnnhOe26UAarOq6Ga-HtOv2Qfwj1fPZYV/exec";
+const API_URL =
+  import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL ||
+  APPS_SCRIPT_PROJECT.webAppUrl;
 
 export async function getDashboardData() {
   const response = await fetch(`${API_URL}?action=getDashboard`);
@@ -196,12 +199,12 @@ export async function checkDuplicateCustomer(phone) {
   return result.data;
 }
 
-export async function syncCompanySheet() {
+export async function syncCompanySheet(sourceSheets = []) {
   const response = await fetch(API_URL, {
     method: "POST",
     body: JSON.stringify({
       action: "syncCompanySheet",
-      data: {},
+      data: { sourceSheets },
     }),
   });
 
