@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAllData, updateRecord } from "../api/googleSheetApi";
 
@@ -12,7 +12,9 @@ function Customers() {
   const [expandedId, setExpandedId] = useState(null);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchField, setSearchField] = useState("all");
   const [selectedChannel, setSelectedChannel] = useState("all");
+  const customersTopRef = useRef(null);
 
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [editFormData, setEditFormData] = useState({
@@ -52,6 +54,11 @@ function Customers() {
   }
 
   function openEditModal(customer) {
+    const primarySalesChannel = getPrimaryCustomerSalesChannel(
+      customer,
+      getCustomerACUnits(customer, acUnits)
+    );
+
     setEditingCustomer(customer);
     setEditFormData({
       Customer_Name: customer.Customer_Name || "",
@@ -61,7 +68,7 @@ function Customers() {
       Google_Map_Link: customer.Google_Map_Link || customer.Google_Map_Li || "",
       Created_Date: formatDateForInput(customer.Created_Date),
       Notes: customer.Notes || "",
-      Sales_Channel: getCustomerSalesChannel(customer, acUnits),
+      Sales_Channel: primarySalesChannel === "Unknown" ? "Showroom" : primarySalesChannel,
     });
   }
 
@@ -113,49 +120,68 @@ function Customers() {
   }
 
   function getValue(row, keys) {
+    const value = getRawValue(row, keys);
+    return value || "-";
+  }
+
+  function getRawValue(row, keys) {
     for (const key of keys) {
       if (row[key] !== undefined && row[key] !== null && row[key] !== "") {
         return row[key];
       }
     }
-    return "-";
+    return "";
   }
 
-  function getFilteredCustomers() {
-    return customers.filter((customer) => {
-      const customerName = String(getValue(customer, ["Customer_Name", "Customer Name", "name"]) || "").toLowerCase();
-      const phone = String(getValue(customer, ["Phone", "phone"]) || "").toLowerCase();
-      const cleanSearchQuery = String(searchQuery || "").toLowerCase();
-      const searchDigits = String(searchQuery || "").replace(/\D/g, "");
-      const searchPhone = normalizePhoneSearchQuery(searchQuery);
-      const customerPhone = normalizePhone(phone);
-      
-      const salesChannel = getCustomerSalesChannel(customer, acUnits)
-        .toLowerCase()
-        .trim();
+  const customerRows = useMemo(
+    () =>
+      customers.map((customer) => {
+        const customerUnits = getCustomerACUnits(customer, acUnits);
+        const primarySalesChannel = getPrimaryCustomerSalesChannel(customer, customerUnits);
+        const salesChannels = getCustomerSalesChannels(customer, customerUnits);
 
-      // Check if search query matches
-      const matchesSearch =
-        !searchQuery ||
-        customerName.includes(cleanSearchQuery) ||
-        phone.includes(cleanSearchQuery) ||
-        (searchPhone.length >= 1 && customerPhone.includes(searchPhone)) ||
-        (searchDigits && /^0+$/.test(searchDigits) && customerPhone !== "");
+        return {
+          customer,
+          customerUnits,
+          primarySalesChannel,
+          salesChannels,
+          searchText: buildCustomerSearchText(customer, customerUnits),
+          searchFields: buildCustomerSearchFields(customer, customerUnits),
+          phoneText: buildCustomerPhoneSearchText(customer, customerUnits),
+        };
+      }),
+    [customers, acUnits]
+  );
 
-      // Check if channel filter matches
-      const filterChannel = String(selectedChannel).toLowerCase().trim();
+  function getFilteredCustomerRows() {
+    const normalizedQuery = normalizeSearchText(searchQuery);
+    const filterChannel = String(selectedChannel || "all").toLowerCase().trim();
+
+    return customerRows.filter((row) => {
+      const matchesSearch = customerMatchesSearch(row, normalizedQuery, searchField);
       const matchesChannel =
         filterChannel === "all" ||
-        salesChannel === filterChannel;
+        normalizeChannel(row.primarySalesChannel).toLowerCase() === filterChannel;
 
       return matchesSearch && matchesChannel;
+    });
+  }
+
+  function handleChannelFilterChange(channel) {
+    setSelectedChannel(channel);
+    setSearchQuery("");
+    setSearchField("all");
+    setExpandedId(null);
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      customersTopRef.current?.scrollIntoView({ block: "start" });
     });
   }
 
   if (loading) return <p>Loading customers...</p>;
   if (error) return <p className="error-text">Error: {error}</p>;
 
-  const filteredCustomers = getFilteredCustomers();
+  const filteredCustomerRows = getFilteredCustomerRows();
 
   return (
     <div>
@@ -166,43 +192,72 @@ function Customers() {
 
       {successMessage && <p className="success-text">{successMessage}</p>}
 
-      <div className="search-filter-section">
-        <div className="search-box">
+      <div className="search-filter-section" ref={customersTopRef}>
+        <div className="search-box customer-search-box">
+          <select
+            value={searchField}
+            onChange={(e) => {
+              setSearchField(e.target.value);
+              setExpandedId(null);
+            }}
+            className="search-field-select"
+            aria-label="Search by"
+          >
+            <option value="all">All Fields</option>
+            <option value="customer">Customer Name</option>
+            <option value="phone">Phone</option>
+            <option value="address">Address</option>
+            <option value="invoice">Invoice</option>
+            <option value="model">AC Model</option>
+            <option value="serial">Serial Number</option>
+            <option value="id">Customer ID</option>
+          </select>
           <input
             type="text"
-            placeholder="Search by name or phone..."
+            placeholder={getSearchPlaceholder(searchField)}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setExpandedId(null);
+            }}
             className="search-input"
           />
         </div>
 
         <div className="filter-buttons">
           <button
+            type="button"
             className={`filter-btn ${selectedChannel === "all" ? "active" : ""}`}
-            onClick={() => setSelectedChannel("all")}
+            onClick={() => handleChannelFilterChange("all")}
           >
             All Customers
           </button>
           <button
+            type="button"
             className={`filter-btn ${selectedChannel === "showroom" ? "active" : ""}`}
-            onClick={() => setSelectedChannel("showroom")}
+            onClick={() => handleChannelFilterChange("showroom")}
           >
             Showroom
           </button>
           <button
+            type="button"
             className={`filter-btn ${selectedChannel === "online" ? "active" : ""}`}
-            onClick={() => setSelectedChannel("online")}
+            onClick={() => handleChannelFilterChange("online")}
           >
             Online
           </button>
         </div>
       </div>
 
-      <div className="record-list">
-        {filteredCustomers.length === 0 && <p className="empty-list">No customers found.</p>}
+      <div className="customer-result-summary">
+        Showing {filteredCustomerRows.length} {getSelectedChannelLabel(selectedChannel)} customers
+      </div>
 
-        {filteredCustomers.map((customer, index) => {
+      <div className="record-list" key={`${selectedChannel}-${searchField}-${searchQuery}`}>
+        {filteredCustomerRows.length === 0 && <p className="empty-list">No customers found.</p>}
+
+        {filteredCustomerRows.map((row, index) => {
+          const { customer, customerUnits, primarySalesChannel, salesChannels } = row;
           const customerId = getValue(customer, ["Customer_ID", "customer_ID", "Customer ID", "id"]);
           const customerName = getValue(customer, ["Customer_Name", "Customer Name", "name"]);
           const phone = getValue(customer, ["Phone", "phone"]);
@@ -211,7 +266,8 @@ function Customers() {
           const googleMapLink = getValue(customer, ["Google_Map_Link", "Google_Map_Li", "Google Map Link", "googleMapLink"]);
           const createdDate = getValue(customer, ["Created_Date", "Created Date", "createdDate"]);
           const notes = getValue(customer, ["Notes", "notes"]);
-          const salesChannel = getCustomerSalesChannel(customer, acUnits);
+          const salesChannelLabel = salesChannels.join(", ");
+          const salesChannelClass = normalizeChannel(primarySalesChannel).toLowerCase() || "unknown";
 
           const id = customerId !== "-" ? customerId : index;
           const isExpanded = expandedId === id;
@@ -237,11 +293,14 @@ function Customers() {
                       </>
                     )}
                   </div>
-                  {address !== "-" && (
-                    <div className="record-badge-row">
+                  <div className="record-badge-row">
+                    {address !== "-" && (
                       <span className="record-issue-preview">{address}</span>
-                    </div>
-                  )}
+                    )}
+                    <span className={`customer-type-badge ${salesChannelClass}`}>
+                      {salesChannelLabel}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="record-actions" onClick={(e) => e.stopPropagation()}>
@@ -273,8 +332,8 @@ function Customers() {
                     </div>
                     <div className="detail-item">
                       <label>Customer Type</label>
-                      <span className={`customer-type-badge ${salesChannel.toLowerCase()}`}>
-                        {salesChannel}
+                      <span className={`customer-type-badge ${salesChannelClass}`}>
+                        {salesChannelLabel}
                       </span>
                     </div>
                     <div className="detail-item">
@@ -393,22 +452,6 @@ async function updateCustomerACUnitSalesChannels(customerId, salesChannel, acUni
   );
 }
 
-function getCustomerSalesChannel(customer, acUnits) {
-  const customerChannel = customer.Sales_Channel || customer.sales_channel;
-
-  if (customerChannel && customerChannel !== "-") {
-    return customerChannel;
-  }
-
-  const customerId =
-    customer.Customer_ID || customer.customer_ID || customer["Customer ID"] || customer.id;
-  const matchingUnit = acUnits.find(
-    (unit) => normalizeValue(unit.Customer_ID) === normalizeValue(customerId)
-  );
-
-  return matchingUnit?.Sales_Channel || "Showroom";
-}
-
 function normalizeValue(value) {
   return String(value || "").trim().toLowerCase();
 }
@@ -420,23 +463,221 @@ function formatDateForInput(value) {
   return date.toISOString().split("T")[0];
 }
 
-function normalizePhoneSearchQuery(value) {
-  const digits = String(value || "").replace(/\D/g, "");
+function getCustomerId(customer) {
+  return (
+    customer.Customer_ID ||
+    customer.customer_ID ||
+    customer["Customer ID"] ||
+    customer.id ||
+    ""
+  );
+}
 
-  if (!digits) return "";
+function getCustomerACUnits(customer, acUnits) {
+  const customerId = normalizeValue(getCustomerId(customer));
 
-  let phone = digits;
+  if (!customerId) return [];
 
-  if (phone.startsWith("0094")) {
-    phone = phone.slice(4);
-  } else if (phone.startsWith("94")) {
-    phone = phone.slice(2);
+  return acUnits.filter(
+    (unit) => normalizeValue(unit.Customer_ID || unit["Customer ID"]) === customerId
+  );
+}
+
+function getCustomerSalesChannels(customer, customerUnits) {
+  const channelValues = [
+    customer.Sales_Channel,
+    customer.sales_channel,
+    customer.Customer_Source,
+    customer.customer_source,
+    customer.Source,
+    customer.source,
+    ...customerUnits.map((unit) => unit.Sales_Channel || unit.sales_channel),
+  ];
+
+  const channels = [];
+
+  channelValues.forEach((value) => {
+    const channel = normalizeChannel(value);
+    if (channel && !channels.includes(channel)) {
+      channels.push(channel);
+    }
+  });
+
+  return channels.length > 0 ? channels : ["Unknown"];
+}
+
+function getPrimaryCustomerSalesChannel(customer, customerUnits) {
+  return getCustomerSalesChannels(customer, customerUnits)[0] || "Unknown";
+}
+
+function normalizeChannel(value) {
+  const text = String(value || "").trim().toLowerCase();
+
+  if (!text || text === "-") return "";
+  if (text.includes("online")) return "Online";
+  if (text.includes("showroom") || text.includes("show room")) return "Showroom";
+
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function buildCustomerSearchText(customer, customerUnits) {
+  return normalizeSearchText([
+    ...Object.values(customer || {}),
+    ...customerUnits.flatMap((unit) => Object.values(unit || {})),
+  ].join(" "));
+}
+
+function buildCustomerSearchFields(customer, customerUnits) {
+  return {
+    id: normalizeSearchText([
+      customer.Customer_ID,
+      customer.customer_ID,
+      customer["Customer ID"],
+      customer.id,
+      ...customerUnits.flatMap((unit) => [unit.Customer_ID, unit.AC_ID]),
+    ].join(" ")),
+    customer: normalizeSearchText([
+      customer.Customer_Name,
+      customer["Customer Name"],
+      customer.name,
+      customer.Name,
+    ].join(" ")),
+    phone: buildCustomerPhoneSearchText(customer, customerUnits),
+    address: normalizeSearchText([
+      customer.Address,
+      customer.address,
+      customer.Google_Map_Link,
+      customer.Google_Map_Li,
+      customer["Google Map Link"],
+    ].join(" ")),
+    invoice: normalizeSearchText(
+      customerUnits
+        .flatMap((unit) => [
+          unit.Invoice_Number,
+          unit["Invoice Number"],
+          unit.invoiceNumber,
+        ])
+        .join(" ")
+    ),
+    model: normalizeSearchText(
+      customerUnits
+        .flatMap((unit) => [
+          unit.AC_Model,
+          unit["AC Model"],
+          unit.Model,
+          unit.model,
+        ])
+        .join(" ")
+    ),
+    serial: normalizeSearchText(
+      customerUnits
+        .flatMap((unit) => [
+          unit.Serial_Number,
+          unit["Serial Number"],
+          unit.serialNumber,
+        ])
+        .join(" ")
+    ),
+  };
+}
+
+function buildCustomerPhoneSearchText(customer, customerUnits) {
+  const phones = [
+    customer.Phone,
+    customer.phone,
+    customer["Contact Number"],
+    customer.Contact_Number,
+    ...customerUnits.flatMap((unit) => [
+      unit.Phone,
+      unit.phone,
+      unit["Contact Number"],
+      unit.Contact_Number,
+    ]),
+  ];
+
+  return phones
+    .flatMap(getNormalizedPhoneCandidates)
+    .filter(Boolean)
+    .join(" ");
+}
+
+function customerMatchesSearch(row, normalizedQuery, searchField) {
+  if (!normalizedQuery) return true;
+
+  if (searchField === "phone") {
+    return getNormalizedPhoneCandidates(normalizedQuery).some(
+      (phone) => phone.length >= 3 && row.phoneText.includes(phone)
+    );
   }
 
-  return phone.replace(/^0+/, "");
+  if (searchField !== "all") {
+    const fieldText = row.searchFields[searchField] || "";
+    return normalizedQuery
+      .split(" ")
+      .filter(Boolean)
+      .every((term) => fieldText.includes(term));
+  }
+
+  const searchTerms = normalizedQuery.split(" ").filter(Boolean);
+  const textMatches = searchTerms.every((term) => row.searchText.includes(term));
+  const phoneMatches = getNormalizedPhoneCandidates(normalizedQuery).some(
+    (phone) => phone.length >= 3 && row.phoneText.includes(phone)
+  );
+
+  return textMatches || phoneMatches;
+}
+
+function getSearchPlaceholder(searchField) {
+  const placeholders = {
+    all: "Search all customer and AC fields...",
+    customer: "Search customer name...",
+    phone: "Search phone number...",
+    address: "Search address or map link...",
+    invoice: "Search invoice number...",
+    model: "Search AC model...",
+    serial: "Search serial number...",
+    id: "Search customer ID or AC ID...",
+  };
+
+  return placeholders[searchField] || placeholders.all;
+}
+
+function getSelectedChannelLabel(selectedChannel) {
+  if (selectedChannel === "online") return "Online";
+  if (selectedChannel === "showroom") return "Showroom";
+  return "all";
+}
+
+function normalizeSearchText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function normalizePhone(value) {
+  return getNormalizedPhoneCandidates(value)[0] || "";
+}
+
+function getNormalizedPhoneCandidates(value) {
+  const text = String(value || "").trim();
+
+  if (!text) return [];
+
+  if (/[eE]/.test(text) && !Number.isNaN(Number(text))) {
+    const numericPhone = String(Math.trunc(Number(text)));
+    return [normalizePhoneDigits(numericPhone)].filter(Boolean);
+  }
+
+  const candidates = text.match(/\d{7,12}/g) || [];
+  const phoneCandidates = candidates.length > 0 ? candidates : [text.replace(/\D/g, "")];
+
+  return phoneCandidates
+    .map(normalizePhoneDigits)
+    .filter(Boolean);
+}
+
+function normalizePhoneDigits(value) {
   const digits = String(value || "").replace(/\D/g, "");
 
   if (!digits) return "";

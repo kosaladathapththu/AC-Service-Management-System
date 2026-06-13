@@ -26,8 +26,12 @@ export const SYSTEM_DATABASE_SHEET = {
 
 export const APPS_SCRIPT_PROJECT = {
   projectId: "1-bAlKswW1xmnhyGqCn9DYdM-QYHZFYCVK3RWpLXK6MCIYOAyS-iQWFow",
+  deploymentId:
+    "AKfycbw4Mio281NSmE3qI1JIoDrncxweizjLdAPiN-aqoHq9bbiMnofl2biVKue-P3tFH9fF",
   editorUrl:
     "https://script.google.com/u/0/home/projects/1-bAlKswW1xmnhyGqCn9DYdM-QYHZFYCVK3RWpLXK6MCIYOAyS-iQWFow/edit",
   webAppUrl:
     "https://script.google.com/macros/s/AKfycbw4Mio281NSmE3qI1JIoDrncxweizjLdAPiN-aqoHq9bbiMnofl2biVKue-P3tFH9fF/exec",
+  libraryUrl:
+    "https://script.google.com/macros/library/d/1-bAlKswW1xmnhyGqCn9DYdM-QYHZFYCVK3RWpLXK6MCIYOAyS-iQWFow/8",
 };
