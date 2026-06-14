@@ -583,16 +583,8 @@ function buildCustomerSearchFields(customer, customerUnits) {
 
 function buildCustomerPhoneSearchText(customer, customerUnits) {
   const phones = [
-    customer.Phone,
-    customer.phone,
-    customer["Contact Number"],
-    customer.Contact_Number,
-    ...customerUnits.flatMap((unit) => [
-      unit.Phone,
-      unit.phone,
-      unit["Contact Number"],
-      unit.Contact_Number,
-    ]),
+    ...getPhoneValues(customer),
+    ...customerUnits.flatMap(getPhoneValues),
   ];
 
   return phones
@@ -659,6 +651,22 @@ function normalizePhone(value) {
   return getNormalizedPhoneCandidates(value)[0] || "";
 }
 
+function getPhoneValues(record) {
+  return Object.entries(record || {})
+    .filter(([key]) => {
+      const normalizedKey = normalizeSearchText(key).replace(/[_-]/g, " ");
+      return (
+        normalizedKey.includes("phone") ||
+        normalizedKey.includes("contact") ||
+        normalizedKey.includes("mobile") ||
+        normalizedKey.includes("telephone") ||
+        normalizedKey === "tel"
+      );
+    })
+    .map(([, value]) => value)
+    .filter((value) => value !== undefined && value !== null && value !== "");
+}
+
 function getNormalizedPhoneCandidates(value) {
   const text = String(value || "").trim();
 
@@ -670,11 +678,38 @@ function getNormalizedPhoneCandidates(value) {
   }
 
   const candidates = text.match(/\d{7,12}/g) || [];
-  const phoneCandidates = candidates.length > 0 ? candidates : [text.replace(/\D/g, "")];
+  const compactDigits = text.replace(/\D/g, "");
+  const phoneCandidates = [...candidates, compactDigits];
 
-  return phoneCandidates
-    .map(normalizePhoneDigits)
-    .filter(Boolean);
+  return Array.from(
+    new Set(
+      phoneCandidates
+        .flatMap(getPhoneSearchVariants)
+        .filter(Boolean)
+    )
+  );
+}
+
+function getPhoneSearchVariants(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+
+  if (!digits) return [];
+
+  const variants = new Set();
+  const normalized = normalizePhoneDigits(digits);
+
+  if (normalized) {
+    variants.add(normalized);
+    variants.add(normalized.replace(/^0+/, ""));
+    if (normalized.length === 9 && normalized.startsWith("7")) {
+      variants.add("0" + normalized);
+    }
+  }
+
+  variants.add(digits);
+  variants.add(digits.replace(/^0+/, ""));
+
+  return Array.from(variants);
 }
 
 function normalizePhoneDigits(value) {
@@ -688,7 +723,7 @@ function normalizePhoneDigits(value) {
     phone = phone.slice(4);
   } else if (phone.startsWith("94") && phone.length > 9) {
     phone = phone.slice(2);
-  } else if (phone.startsWith("0") && phone.length > 9) {
+  } else if (phone.startsWith("0")) {
     phone = phone.replace(/^0+/, "");
   }
 
