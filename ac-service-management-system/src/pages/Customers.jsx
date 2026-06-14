@@ -260,6 +260,8 @@ function Customers() {
           const { customer, customerUnits, primarySalesChannel, salesChannels } = row;
           const customerId = getValue(customer, ["Customer_ID", "customer_ID", "Customer ID", "id"]);
           const customerName = getValue(customer, ["Customer_Name", "Customer Name", "name"]);
+          const generatedNameInfo = getGeneratedCustomerNameInfo(customerName);
+          const displayCustomerName = generatedNameInfo ? "Unnamed customer" : customerName;
           const phone = getValue(customer, ["Phone", "phone"]);
           const email = getValue(customer, ["Email", "email"]);
           const address = getValue(customer, ["Address", "address"]);
@@ -279,7 +281,9 @@ function Customers() {
 
                 <div className="record-summary">
                   <div className="record-primary-row">
-                    <span className="record-customer-id">{customerName}</span>
+                    <span className={`record-customer-id ${generatedNameInfo ? "record-muted-name" : ""}`}>
+                      {displayCustomerName}
+                    </span>
                     {phone !== "-" && (
                       <>
                         <span className="record-separator">·</span>
@@ -296,6 +300,11 @@ function Customers() {
                   <div className="record-badge-row">
                     {address !== "-" && (
                       <span className="record-issue-preview">{address}</span>
+                    )}
+                    {generatedNameInfo && (
+                      <span className="import-source-badge">
+                        {generatedNameInfo.source} row {generatedNameInfo.row}
+                      </span>
                     )}
                     <span className={`customer-type-badge ${salesChannelClass}`}>
                       {salesChannelLabel}
@@ -638,6 +647,19 @@ function getSelectedChannelLabel(selectedChannel) {
   if (selectedChannel === "online") return "Online";
   if (selectedChannel === "showroom") return "Showroom";
   return "all";
+}
+
+function getGeneratedCustomerNameInfo(customerName) {
+  const match = String(customerName || "").match(
+    /^Unknown Customer\s+(Online|Showroom)\s+Row\s+(\d+)$/i
+  );
+
+  if (!match) return null;
+
+  return {
+    source: match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase(),
+    row: match[2],
+  };
 }
 
 function normalizeSearchText(value) {

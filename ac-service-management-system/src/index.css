@@ -2874,6 +2874,12 @@ button.view-link:disabled {
   color: #111827;
 }
 
+.record-muted-name {
+  color: #4B5563;
+  font-style: italic;
+  font-weight: 600;
+}
+
 .record-separator {
   color: #D1D5DB;
   font-size: 11px;
@@ -2896,6 +2902,17 @@ button.view-link:disabled {
   flex-wrap: wrap;
   align-items: center;
   gap: 5px;
+}
+
+.import-source-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 5px;
+  background: #F3F4F6;
+  color: #4B5563;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 /* Short issue preview text in complaints */
