@@ -236,6 +236,14 @@ function CustomerProfile() {
                   {svc.Service_Year && <span className="status-neutral">{svc.Service_Year}</span>}
                   {svc.Service_No && <span className="status-neutral">Service {svc.Service_No}</span>}
                   {svc.Service_Category && <span className="status-neutral">{svc.Service_Category}</span>}
+                  <span className={`status-badge ${getTechnicianTypeClass(svc.Technician_Type)}`}>
+                    Tech: {svc.Technician_Type || "In-house"}
+                  </span>
+                  {svc.Technician_Payment && (
+                    <span className="status-neutral">
+                      Tech Pay {formatPrice(svc.Technician_Payment)}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -384,6 +392,14 @@ function getInstallationStatusClass(status) {
 
 function getInstallationTypeClass(type) {
   if (!type) return "";
+  const v = String(type).toLowerCase();
+  if (v === "in-house") return "status-active";
+  if (v === "outsourced") return "status-expired";
+  return "";
+}
+
+function getTechnicianTypeClass(type) {
+  if (!type) return "status-active";
   const v = String(type).toLowerCase();
   if (v === "in-house") return "status-active";
   if (v === "outsourced") return "status-expired";

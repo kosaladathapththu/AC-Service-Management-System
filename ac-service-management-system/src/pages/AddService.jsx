@@ -21,6 +21,8 @@ function AddService() {
     Service_Type: "Free",
     Service_Category: "Normal",
     Technician_Name: "",
+    Technician_Type: "In-house",
+    Technician_Payment: "",
     Service_Status: "Pending",
     Payment_Required: "No",
     Notes: "",
@@ -67,6 +69,15 @@ function AddService() {
       return;
     }
 
+    if (name === "Technician_Type" && value !== "Outsourced") {
+      setFormData((prev) => ({
+        ...prev,
+        Technician_Type: value,
+        Technician_Payment: "",
+      }));
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   }
 
@@ -87,6 +98,8 @@ function AddService() {
         Service_Type: "Free",
         Service_Category: "Normal",
         Technician_Name: "",
+        Technician_Type: "In-house",
+        Technician_Payment: "",
         Service_Status: "Pending",
         Payment_Required: "No",
         Notes: "",
@@ -294,6 +307,37 @@ function AddService() {
             <div className="form-group">
               <label>Technician Name</label>
               <input type="text" name="Technician_Name" value={formData.Technician_Name} onChange={handleChange} placeholder="e.g. Amal" />
+            </div>
+
+            <div className="form-group">
+              <label>Technician Type</label>
+              <select
+                name="Technician_Type"
+                value={formData.Technician_Type}
+                onChange={handleChange}
+              >
+                <option value="In-house">In-house</option>
+                <option value="Outsourced">Outsourced</option>
+              </select>
+              <span className="form-hint">
+                In-house technicians do not need a technician payment.
+              </span>
+            </div>
+
+            <div className="form-group">
+              <label>Technician Payment (LKR)</label>
+              <input
+                type="number"
+                name="Technician_Payment"
+                value={formData.Technician_Payment}
+                onChange={handleChange}
+                min="0"
+                placeholder="e.g. 2000"
+                disabled={formData.Technician_Type !== "Outsourced"}
+              />
+              <span className="form-hint">
+                Enter only when the service technician is outsourced.
+              </span>
             </div>
 
             <div className="form-group">

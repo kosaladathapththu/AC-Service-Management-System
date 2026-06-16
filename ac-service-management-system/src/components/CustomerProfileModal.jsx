@@ -88,6 +88,10 @@ function CustomerProfileModal({ profile, onClose }) {
             <MiniRecord key={item.Service_ID || index} id={item.Service_ID}>
               <span>AC: {item.AC_ID || "-"}</span>
               <span>{formatDate(item.Service_Date)}</span>
+              <span>Tech: {item.Technician_Type || "In-house"}</span>
+              {item.Technician_Payment && (
+                <span>Tech Pay {formatPrice(item.Technician_Payment)}</span>
+              )}
               <span
                 className={`status-badge ${getServiceStatusClass(
                   item.Service_Status

@@ -64,11 +64,13 @@ function Installations() {
 
   function openEditModal(installation) {
     setEditingInstallation(installation);
+    const technicianType = getInstallationTechnicianType(installation);
+
     setEditFormData({
       Installation_Date: formatDateForInput(installation.Installation_Date),
       Installation_Type: installation.Installation_Type || "In-house",
       Technician_Name: installation.Technician_Name || "",
-      Technician_type: installation.Technician_type || "In-house",
+      Technician_type: technicianType,
       Outsource_Payment: installation.Outsource_Payment || "",
       Installation_Payment_Date: formatDateForInput(installation.Installation_Payment_Date),
       Installation_Status: installation.Installation_Status || "Pending",
@@ -110,6 +112,20 @@ function Installations() {
   function handleEditChange(event) {
     const { name, value } = event.target;
     setEditFormData((prev) => {
+      if (name === "Installation_Type") {
+        return {
+          ...prev,
+          Installation_Type: value,
+          Technician_type: value,
+          ...(value === "Outsourced"
+            ? {}
+            : {
+                Outsource_Payment: "",
+                Installation_Payment_Date: "",
+              }),
+        };
+      }
+
       if (name === "Technician_type" && value !== "Outsourced") {
         return {
           ...prev,
@@ -280,8 +296,8 @@ function Installations() {
                     <span className={`status-badge ${getInstallationTypeClass(installation.Installation_Type)}`}>
                       {installation.Installation_Type || "—"}
                     </span>
-                    <span className={`status-badge ${getTechnicianTypeClass(installation.Technician_type)}`}>
-                      Tech: {installation.Technician_type || "In-house"}
+                    <span className={`status-badge ${getTechnicianTypeClass(getInstallationTechnicianType(installation))}`}>
+                      Tech: {getInstallationTechnicianType(installation)}
                     </span>
                     {installation.Outsource_Payment && (
                       <span className="status-badge status-neutral">{formatPrice(installation.Outsource_Payment)}</span>
@@ -352,7 +368,7 @@ function Installations() {
                     </div>
                     <div className="detail-item">
                       <label>Technician Type</label>
-                      <span>{installation.Technician_type || "In-house"}</span>
+                      <span>{getInstallationTechnicianType(installation)}</span>
                     </div>
                     <div className="detail-item">
                       <label>Outsource Payment</label>
@@ -564,6 +580,16 @@ function getInstallationTypeClass(type) {
   if (v === "in-house") return "status-active";
   if (v === "outsourced") return "status-expired";
   return "";
+}
+
+function getInstallationTechnicianType(installation) {
+  if (installation.Technician_type) return installation.Technician_type;
+
+  if (String(installation.Installation_Type || "").toLowerCase() === "outsourced") {
+    return "Outsourced";
+  }
+
+  return "In-house";
 }
 
 function getTechnicianTypeClass(type) {

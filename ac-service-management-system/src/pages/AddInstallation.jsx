@@ -101,6 +101,21 @@ function AddInstallation() {
       return;
     }
 
+    if (name === "Installation_Type") {
+      setFormData((prev) => ({
+        ...prev,
+        Installation_Type: value,
+        Technician_type: value,
+        ...(value === "Outsourced"
+          ? {}
+          : {
+              Outsource_Payment: "",
+              Installation_Payment_Date: "",
+            }),
+      }));
+      return;
+    }
+
     setFormData((prev) => {
       if (name === "Technician_type" && value !== "Outsourced") {
         return {

@@ -39,6 +39,8 @@ function Services() {
     Service_Type: "Free",
     Service_Category: "Normal",
     Technician_Name: "",
+    Technician_Type: "In-house",
+    Technician_Payment: "",
     Service_Status: "Pending",
     Payment_Required: "No",
     Notes: "",
@@ -201,6 +203,8 @@ function Services() {
       Service_Type: service.Service_Type || "Free",
       Service_Category: service.Service_Category || "Normal",
       Technician_Name: service.Technician_Name || "",
+      Technician_Type: service.Technician_Type || "In-house",
+      Technician_Payment: service.Technician_Payment || "",
       Service_Status: service.Service_Status || "Pending",
       Payment_Required: service.Payment_Required || "No",
       Notes: service.Notes || "",
@@ -217,6 +221,8 @@ function Services() {
       Service_Type: "Free",
       Service_Category: "Normal",
       Technician_Name: "",
+      Technician_Type: "In-house",
+      Technician_Payment: "",
       Service_Status: "Pending",
       Payment_Required: "No",
       Notes: "",
@@ -233,6 +239,15 @@ function Services() {
         Payment_Required: value === "Paid" ? "Yes" : "No",
       }));
 
+      return;
+    }
+
+    if (name === "Technician_Type" && value !== "Outsourced") {
+      setEditFormData((prev) => ({
+        ...prev,
+        Technician_Type: value,
+        Technician_Payment: "",
+      }));
       return;
     }
 
@@ -623,6 +638,20 @@ function Services() {
                       </span>
                     )}
 
+                    <span
+                      className={`status-badge ${getTechnicianTypeClass(
+                        service.Technician_Type
+                      )}`}
+                    >
+                      Tech: {service.Technician_Type || "In-house"}
+                    </span>
+
+                    {service.Technician_Payment && (
+                      <span className="status-badge status-neutral">
+                        Tech Pay {formatPrice(service.Technician_Payment)}
+                      </span>
+                    )}
+
                     {isPastDate(service.Service_Date) &&
                       ["pending", "rescheduled"].includes(
                         String(service.Service_Status || "").toLowerCase()
@@ -713,6 +742,16 @@ function Services() {
                     <div className="detail-item">
                       <label>Payment Required</label>
                       <span>{service.Payment_Required || "—"}</span>
+                    </div>
+
+                    <div className="detail-item">
+                      <label>Technician Type</label>
+                      <span>{service.Technician_Type || "In-house"}</span>
+                    </div>
+
+                    <div className="detail-item">
+                      <label>Technician Payment</label>
+                      <span>{formatPrice(service.Technician_Payment)}</span>
                     </div>
 
                     <div className="detail-item">
@@ -842,6 +881,33 @@ function Services() {
                 </div>
 
                 <div className="form-group">
+                  <label>Technician Type</label>
+                  <select
+                    name="Technician_Type"
+                    value={editFormData.Technician_Type}
+                    onChange={handleEditChange}
+                  >
+                    <option value="In-house">In-house</option>
+                    <option value="Outsourced">Outsourced</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Technician Payment (LKR)</label>
+                  <input
+                    type="number"
+                    name="Technician_Payment"
+                    value={editFormData.Technician_Payment}
+                    onChange={handleEditChange}
+                    min="0"
+                    disabled={editFormData.Technician_Type !== "Outsourced"}
+                  />
+                  <span className="form-hint">
+                    Company payment for outsourced service technicians only.
+                  </span>
+                </div>
+
+                <div className="form-group">
                   <label>Service Status</label>
                   <select
                     name="Service_Status"
@@ -917,6 +983,8 @@ function serviceMatchesSearch(service, customers, query) {
     "Service_Type",
     "Service_Category",
     "Technician_Name",
+    "Technician_Type",
+    "Technician_Payment",
     "Service_Status",
     "Payment_Required",
     "Reminder_Status",
@@ -1100,6 +1168,13 @@ function formatDateForInput(value) {
   return date.toISOString().split("T")[0];
 }
 
+function formatPrice(value) {
+  if (!value) return "—";
+  const n = Number(value);
+  if (Number.isNaN(n)) return String(value);
+  return `Rs. ${n.toLocaleString("en-LK")}`;
+}
+
 function getServiceStatusClass(status) {
   if (!status) return "";
 
@@ -1121,6 +1196,14 @@ function getServiceTypeClass(type) {
   if (v === "free") return "status-active";
   if (v === "paid") return "status-info";
 
+  return "";
+}
+
+function getTechnicianTypeClass(type) {
+  if (!type) return "status-active";
+  const v = String(type).toLowerCase();
+  if (v === "in-house") return "status-active";
+  if (v === "outsourced") return "status-expired";
   return "";
 }
 

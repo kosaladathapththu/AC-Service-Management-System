@@ -917,6 +917,8 @@ function syncPatchFindOrCreateService(context, record, service, customerId, acId
     Service_Type: service.type,
     Service_Category: "Normal",
     Technician_Name: service.technician || "",
+    Technician_Type: "In-house",
+    Technician_Payment: "",
     Service_Status: serviceStatus,
     Payment_Required: service.paymentAmount ? "Yes" : "No",
     Notes: syncPatchJoinNotes([
