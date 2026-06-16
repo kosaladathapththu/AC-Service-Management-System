@@ -194,6 +194,11 @@ function ACUnits() {
 
   if (loading) return <p>Loading AC units...</p>;
 
+  const totalUnits = filteredACUnits.reduce(
+    (sum, unit) => sum + Number(unit.Quantity || 0),
+    0
+  );
+
   return (
     <div className="ac-units-page">
       <div className="page-header">
@@ -210,7 +215,10 @@ function ACUnits() {
       <div className="ac-filter-panel">
         <div>
           <h3>{getFilterTitle(activeFilter)}</h3>
-          <p>{filteredACUnits.length} AC unit record(s) found</p>
+          <p>
+            {filteredACUnits.length} AC unit record(s) found
+            {totalUnits !== filteredACUnits.length && ` · ${totalUnits} total unit(s)`}
+          </p>
         </div>
 
         <div className="ac-filter-actions">
@@ -404,6 +412,12 @@ function ACUnits() {
                       </span>
                     )}
 
+                    {unit.Invoice_Number && (
+                      <span className="status-badge status-neutral">
+                        Invoice: {unit.Invoice_Number}
+                      </span>
+                    )}
+
                     {!isACUnitInstalled(unit.AC_ID, installations) && (
                       <span className="status-badge status-expired">
                         Not Installed
@@ -472,6 +486,11 @@ function ACUnits() {
                     <div className="detail-item">
                       <label>Serial Number</label>
                       <span>{unit.Serial_Number || "—"}</span>
+                    </div>
+
+                    <div className="detail-item">
+                      <label>Invoice Number</label>
+                      <span>{unit.Invoice_Number || "—"}</span>
                     </div>
 
                     <div className="detail-item">
@@ -717,9 +736,19 @@ function getACUnitCustomerGroups(acUnits, customers) {
 
   return Array.from(groupMap.values()).map((group) => ({
     ...group,
-    description: `${group.acUnits.length} AC unit${
+    totalQuantity: group.acUnits.reduce(
+      (sum, unit) => sum + Number(unit.Quantity || 0),
+      0
+    ),
+    description: `${group.acUnits.length} AC unit record${
       group.acUnits.length === 1 ? "" : "s"
-    } for this customer`,
+    } / ${group.acUnits.reduce(
+      (sum, unit) => sum + Number(unit.Quantity || 0),
+      0
+    )} total unit${group.acUnits.reduce(
+      (sum, unit) => sum + Number(unit.Quantity || 0),
+      0
+    ) === 1 ? "" : "s"} for this customer`,
   }));
 }
 

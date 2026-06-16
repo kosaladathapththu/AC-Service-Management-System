@@ -26,6 +26,10 @@ function CustomerProfileModal({ profile, onClose }) {
   const email = getValue(customer, ["Email", "email"]);
   const address = getValue(customer, ["Address", "address"]);
 
+  function getTotalQuantity(items) {
+    return items.reduce((total, item) => total + Number(item.Quantity || 0), 0);
+  }
+
   return (
     <div className="modal-overlay">
       <div className="modal-card dashboard-profile-modal">
@@ -41,11 +45,13 @@ function CustomerProfileModal({ profile, onClose }) {
         </p>
         <p className="dashboard-profile-address">{address}</p>
 
-        <DashboardProfileSection title="AC Units" count={acUnits.length}>
+        <DashboardProfileSection title="AC Units" count={getTotalQuantity(acUnits)}>
           {acUnits.map((unit, index) => (
             <MiniRecord key={unit.AC_ID || index} id={unit.AC_ID}>
               <span>{unit.AC_Model || "-"}</span>
               <span>{unit.Serial_Number || "-"}</span>
+              {unit.Invoice_Number && <span>Invoice: {unit.Invoice_Number}</span>}
+              <span>{unit.Quantity ? `Qty: ${unit.Quantity}` : "Qty: 1"}</span>
               <span
                 className={`status-badge ${getWarrantyStatusClass(
                   unit.Warranty_Status

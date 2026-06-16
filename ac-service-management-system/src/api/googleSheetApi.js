@@ -45,138 +45,58 @@ export async function getCustomerProfile(customerId) {
   return sortCustomerProfileDescending(result.data);
 }
 
-export async function addSale(saleData) {
+async function postApi(action, data) {
   const response = await fetch(API_URL, {
     method: "POST",
     body: JSON.stringify({
-      action: "addSale",
-      data: saleData,
+      action,
+      data,
     }),
   });
 
   const result = await response.json();
 
   if (!result.success) {
-    throw new Error(result.message || "Failed to add sale");
+    throw new Error(result.message || `Failed to ${action}`);
   }
 
   return result.data;
+}
+
+export async function addSale(saleData) {
+  return postApi("addSale", saleData);
 }
 
 export async function addInstallation(installationData) {
-  const response = await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "addInstallation",
-      data: installationData,
-    }),
-  });
-
-  const result = await response.json();
-
-  if (!result.success) {
-    throw new Error(result.message || "Failed to add installation");
-  }
-
-  return result.data;
+  return postApi("addInstallation", installationData);
 }
 
 export async function addService(serviceData) {
-  const response = await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "addService",
-      data: serviceData,
-    }),
-  });
-
-  const result = await response.json();
-
-  if (!result.success) {
-    throw new Error(result.message || "Failed to add service");
-  }
-
-  return result.data;
+  return postApi("addService", serviceData);
 }
 
 export async function addPayment(paymentData) {
-  const response = await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "addPayment",
-      data: paymentData,
-    }),
-  });
-
-  const result = await response.json();
-
-  if (!result.success) {
-    throw new Error(result.message || "Failed to add payment");
-  }
-
-  return result.data;
+  return postApi("addPayment", paymentData);
 }
 
 export async function addComplaint(complaintData) {
-  const response = await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "addComplaint",
-      data: complaintData,
-    }),
-  });
-
-  const result = await response.json();
-
-  if (!result.success) {
-    throw new Error(result.message || "Failed to add complaint");
-  }
-
-  return result.data;
+  return postApi("addComplaint", complaintData);
 }
 
 export async function updateRecord(type, idColumn, id, updatedData) {
-  const response = await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "updateRecord",
-      data: {
-        type,
-        idColumn,
-        id,
-        updatedData,
-      },
-    }),
+  return postApi("updateRecord", {
+    type,
+    idColumn,
+    id,
+    updatedData,
   });
-
-  const result = await response.json();
-
-  if (!result.success) {
-    throw new Error(result.message || "Failed to update record");
-  }
-
-  return result.data;
 }
 
 export async function sendManualReminder(type, id) {
-  const response = await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      action: "sendManualReminder",
-      data: {
-        type,
-        id,
-      },
-    }),
+  return postApi("sendManualReminder", {
+    type,
+    id,
   });
-
-  const result = await response.json();
-
-  if (!result.success) {
-    throw new Error(result.message || "Failed to send reminder");
-  }
-
-  return result.data;
 }
 
 export async function checkDuplicateCustomer(phone) {

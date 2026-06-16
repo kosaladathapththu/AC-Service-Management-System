@@ -237,18 +237,16 @@ function AddSale() {
       setError("");
       setSuccessMessage("");
 
-      const payload = {
-        ...formData,
-      };
       const saleItems = getValidACSaleItems(acSaleItems);
 
       if (saleItems.length === 0) {
         throw new Error("Please add at least one AC model for this sale.");
       }
 
-      Object.assign(payload, saleItems[0], {
+      const payload = {
+        ...formData,
         acUnits: saleItems,
-      });
+      };
 
       if (saleMode === "new") {
         const existingCustomer =

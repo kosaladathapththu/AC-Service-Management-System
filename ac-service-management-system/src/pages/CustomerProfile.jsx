@@ -76,6 +76,10 @@ function CustomerProfile() {
   const createdDate = getValue(customer, ["Created_Date", "Created Date", "createdDate"]);
   const notes = getValue(customer, ["Notes", "notes"]);
 
+  function getTotalQuantity(items) {
+    return items.reduce((total, item) => total + Number(item.Quantity || 0), 0);
+  }
+
   return (
     <div>
       <div className="page-header">
@@ -132,7 +136,7 @@ function CustomerProfile() {
       </div>
 
       {/* AC Units */}
-      <ProfileSection title="Purchased AC Units" count={acUnits.length}>
+      <ProfileSection title="Purchased AC Units" count={getTotalQuantity(acUnits)}>
         {acUnits.map((unit, index) => (
           <div key={unit.AC_ID || index} className="record-card">
             <div className="record-card-main" style={{ cursor: "default" }}>
@@ -153,6 +157,9 @@ function CustomerProfile() {
                   </span>
                   {unit.Sales_Channel && <span className="status-neutral">{unit.Sales_Channel}</span>}
                   {unit.Quantity && <span className="status-neutral">Qty: {unit.Quantity}</span>}
+                  {unit.Invoice_Number && (
+                    <span className="status-neutral">Invoice: {unit.Invoice_Number}</span>
+                  )}
                   <span className="record-date" style={{ fontSize: "12px", color: "#6B7280" }}>
                     Warranty: {formatDate(unit.Warranty_Start_Date)} – {formatDate(unit.Warranty_End_Date)}
                   </span>
