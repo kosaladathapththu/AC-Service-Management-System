@@ -121,6 +121,92 @@ function syncPatchListSourceSheets() {
   };
 }
 
+function addSale(data) {
+  if (!data) {
+    throw new Error("Sale data is required.");
+  }
+
+  const customerSheet = getSheetByType("customers");
+  const acSheet = getSheetByType("acUnits");
+  const saleItems = syncPatchGetSaleACItems(data);
+
+  if (saleItems.length === 0) {
+    throw new Error("At least one AC model is required.");
+  }
+
+  let customerId = data.Customer_ID || "";
+  let customerCreated = false;
+
+  if (!customerId) {
+    customerId = generateNextId("customers", "Customer_ID", "C");
+    customerCreated = true;
+
+    appendObjectToSheet(customerSheet, {
+      Customer_ID: customerId,
+      Customer_Name: data.Customer_Name || "",
+      Phone: data.Phone || "",
+      Email: data.Email || "",
+      Address: data.Address || "",
+      Google_Map_Link: data.Google_Map_Link || "",
+      Created_Date: data.Created_Date || new Date(),
+      Customer_Source: data.Customer_Source || saleItems[0].Sales_Channel || "",
+      Notes: data.Notes || "",
+    });
+  }
+
+  const acIds = saleItems.map(function (item) {
+    const acId = generateNextId("acUnits", "AC_ID", "AC");
+
+    appendObjectToSheet(acSheet, {
+      AC_ID: acId,
+      Customer_ID: customerId,
+      AC_Model: item.AC_Model,
+      Serial_Number: item.Serial_Number,
+      Quantity: item.Quantity,
+      Price: item.Price,
+      Purchase_Date: item.Purchase_Date,
+      Sales_Channel: item.Sales_Channel,
+      Warranty_Start_Date: item.Warranty_Start_Date,
+      Warranty_End_Date: item.Warranty_End_Date,
+      Warranty_Status: item.Warranty_Status,
+      Invoice_Number: item.Invoice_Number,
+    });
+
+    return acId;
+  });
+
+  return {
+    customerId: customerId,
+    acId: acIds[0],
+    acIds: acIds,
+    acCount: acIds.length,
+    customerCreated: customerCreated,
+  };
+}
+
+function syncPatchGetSaleACItems(data) {
+  const items = Array.isArray(data.acUnits) ? data.acUnits : [data];
+
+  return items
+    .map(function (item) {
+      return {
+        AC_Model: syncPatchText(item.AC_Model),
+        Serial_Number: syncPatchText(item.Serial_Number),
+        Quantity: item.Quantity || "1",
+        Price: item.Price || "",
+        Purchase_Date: item.Purchase_Date || "",
+        Sales_Channel: item.Sales_Channel || data.Sales_Channel || "",
+        Warranty_Start_Date: item.Warranty_Start_Date || item.Purchase_Date || "",
+        Warranty_End_Date: item.Warranty_End_Date || "",
+        Warranty_Status: item.Warranty_Status || "Active",
+        Invoice_Number: item.Invoice_Number || data.Invoice_Number || "",
+      };
+    })
+    .filter(function (item) {
+      return item.AC_Model;
+    });
+}
+
 function doPost(e) {
   try {
     const requestBody = JSON.parse(e.postData.contents);

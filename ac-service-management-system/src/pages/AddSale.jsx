@@ -12,6 +12,21 @@ import CustomerSearchSelect, {
 function AddSale() {
   const today = new Date().toISOString().split("T")[0];
 
+  function createEmptyACUnit() {
+    return {
+      AC_Model: "",
+      Serial_Number: "",
+      Invoice_Number: "",
+      Quantity: "1",
+      Price: "",
+      Purchase_Date: today,
+      Sales_Channel: "Showroom",
+      Warranty_Start_Date: today,
+      Warranty_End_Date: "",
+      Warranty_Status: "Active",
+    };
+  }
+
   const emptyForm = {
     Customer_ID: "",
     Customer_Name: "",
@@ -24,6 +39,7 @@ function AddSale() {
 
     AC_Model: "",
     Serial_Number: "",
+    Invoice_Number: "",
     Quantity: "1",
     Price: "",
     Purchase_Date: today,
@@ -36,6 +52,7 @@ function AddSale() {
   const [saleMode, setSaleMode] = useState("new");
   const [customers, setCustomers] = useState([]);
   const [formData, setFormData] = useState(emptyForm);
+  const [acSaleItems, setAcSaleItems] = useState([createEmptyACUnit()]);
   const [customerSearch, setCustomerSearch] = useState("");
 
   const [loadingCustomers, setLoadingCustomers] = useState(false);
@@ -73,18 +90,8 @@ function AddSale() {
     latestPhoneRef.current = "";
     setCustomerSearch("");
 
-    setFormData((prev) => ({
-      ...emptyForm,
-      AC_Model: prev.AC_Model,
-      Serial_Number: prev.Serial_Number,
-      Quantity: prev.Quantity || "1",
-      Price: prev.Price,
-      Purchase_Date: prev.Purchase_Date || today,
-      Sales_Channel: prev.Sales_Channel || "Showroom",
-      Warranty_Start_Date: prev.Warranty_Start_Date || today,
-      Warranty_End_Date: prev.Warranty_End_Date,
-      Warranty_Status: prev.Warranty_Status || "Active",
-    }));
+    setFormData(emptyForm);
+    setAcSaleItems([createEmptyACUnit()]);
   }
 
   function handleCustomerSelect(event) {
@@ -129,6 +136,26 @@ function AddSale() {
       latestPhoneRef.current = value;
       checkForDuplicate(value);
     }
+  }
+
+  function handleACItemChange(index, event) {
+    const { name, value } = event.target;
+
+    setAcSaleItems((prev) =>
+      prev.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [name]: value } : item
+      )
+    );
+  }
+
+  function addACItem() {
+    setAcSaleItems((prev) => [...prev, createEmptyACUnit()]);
+  }
+
+  function removeACItem(index) {
+    setAcSaleItems((prev) =>
+      prev.length === 1 ? prev : prev.filter((_, itemIndex) => itemIndex !== index)
+    );
   }
 
   async function checkForDuplicate(phone) {
@@ -213,6 +240,15 @@ function AddSale() {
       const payload = {
         ...formData,
       };
+      const saleItems = getValidACSaleItems(acSaleItems);
+
+      if (saleItems.length === 0) {
+        throw new Error("Please add at least one AC model for this sale.");
+      }
+
+      Object.assign(payload, saleItems[0], {
+        acUnits: saleItems,
+      });
 
       if (saleMode === "new") {
         const existingCustomer =
@@ -231,12 +267,14 @@ function AddSale() {
       }
 
       const result = await addSale(payload);
+      const acIds = result.acIds || (result.acId ? [result.acId] : []);
 
       setSuccessMessage(
-        `Sale recorded successfully — Customer ID: ${result.customerId} · AC ID: ${result.acId}`
+        `Sale recorded successfully - Customer ID: ${result.customerId} - AC units: ${acIds.join(", ")}`
       );
 
       setFormData(emptyForm);
+      setAcSaleItems([createEmptyACUnit()]);
       setSaleMode("new");
       await loadCustomers();
     } catch (error) {
@@ -248,6 +286,7 @@ function AddSale() {
 
   function handleReset() {
     setFormData(emptyForm);
+    setAcSaleItems([createEmptyACUnit()]);
     setSaleMode("new");
     setCustomerSearch("");
     setSuccessMessage("");
@@ -548,110 +587,148 @@ function AddSale() {
             </div>
           </div>
 
-          <div className="form-grid">
-            <div className="form-group">
-              <label>
-                AC Model <span className="required">*</span>
-              </label>
-              <input
-                type="text"
-                name="AC_Model"
-                value={formData.AC_Model}
-                onChange={handleChange}
-                placeholder="e.g. Samsung WindFree 18000 BTU"
-                required
-              />
-            </div>
+          <div className="multi-ac-list">
+            {acSaleItems.map((item, index) => (
+              <div className="multi-ac-item" key={index}>
+                <div className="multi-ac-item-header">
+                  <div>
+                    <h4>AC Unit {index + 1}</h4>
+                    <p>Enter one row for each different AC model.</p>
+                  </div>
 
-            <div className="form-group">
-              <label>Serial Number</label>
-              <input
-                type="text"
-                name="Serial_Number"
-                value={formData.Serial_Number}
-                onChange={handleChange}
-                placeholder="e.g. SN-2024-00123"
-              />
-            </div>
+                  {acSaleItems.length > 1 && (
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => removeACItem(index)}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
 
-            <div className="form-group">
-              <label>Quantity</label>
-              <input
-                type="number"
-                name="Quantity"
-                value={formData.Quantity}
-                onChange={handleChange}
-                min="1"
-              />
-            </div>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label>
+                      AC Model <span className="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="AC_Model"
+                      value={item.AC_Model}
+                      onChange={(event) => handleACItemChange(index, event)}
+                      placeholder="e.g. Samsung WindFree 18000 BTU"
+                      required={index === 0}
+                    />
+                  </div>
 
-            <div className="form-group">
-              <label>Price (LKR)</label>
-              <input
-                type="number"
-                name="Price"
-                value={formData.Price}
-                onChange={handleChange}
-                placeholder="e.g. 185000"
-                min="0"
-              />
-            </div>
+                  <div className="form-group">
+                    <label>Serial Number</label>
+                    <input
+                      type="text"
+                      name="Serial_Number"
+                      value={item.Serial_Number}
+                      onChange={(event) => handleACItemChange(index, event)}
+                      placeholder="e.g. SN-2024-00123"
+                    />
+                  </div>
 
-            <div className="form-group">
-              <label>Purchase Date</label>
-              <input
-                type="date"
-                name="Purchase_Date"
-                value={formData.Purchase_Date}
-                onChange={handleChange}
-              />
-            </div>
+                  <div className="form-group">
+                    <label>Invoice Number</label>
+                    <input
+                      type="text"
+                      name="Invoice_Number"
+                      value={item.Invoice_Number}
+                      onChange={(event) => handleACItemChange(index, event)}
+                      placeholder="e.g. 1337850"
+                    />
+                  </div>
 
-            <div className="form-group">
-              <label>Sales Channel</label>
-              <select
-                name="Sales_Channel"
-                value={formData.Sales_Channel}
-                onChange={handleChange}
-              >
-                <option value="Showroom">Showroom</option>
-                <option value="Online">Online</option>
-              </select>
-            </div>
+                  <div className="form-group">
+                    <label>Quantity</label>
+                    <input
+                      type="number"
+                      name="Quantity"
+                      value={item.Quantity}
+                      onChange={(event) => handleACItemChange(index, event)}
+                      min="1"
+                    />
+                  </div>
 
-            <div className="form-group">
-              <label>Warranty Start Date</label>
-              <input
-                type="date"
-                name="Warranty_Start_Date"
-                value={formData.Warranty_Start_Date}
-                onChange={handleChange}
-              />
-            </div>
+                  <div className="form-group">
+                    <label>Price (LKR)</label>
+                    <input
+                      type="number"
+                      name="Price"
+                      value={item.Price}
+                      onChange={(event) => handleACItemChange(index, event)}
+                      placeholder="e.g. 185000"
+                      min="0"
+                    />
+                  </div>
 
-            <div className="form-group">
-              <label>Warranty End Date</label>
-              <input
-                type="date"
-                name="Warranty_End_Date"
-                value={formData.Warranty_End_Date}
-                onChange={handleChange}
-              />
-            </div>
+                  <div className="form-group">
+                    <label>Purchase Date</label>
+                    <input
+                      type="date"
+                      name="Purchase_Date"
+                      value={item.Purchase_Date}
+                      onChange={(event) => handleACItemChange(index, event)}
+                    />
+                  </div>
 
-            <div className="form-group">
-              <label>Warranty Status</label>
-              <select
-                name="Warranty_Status"
-                value={formData.Warranty_Status}
-                onChange={handleChange}
-              >
-                <option value="Active">Active</option>
-                <option value="Cancelled">Cancelled</option>
-                <option value="Expired">Expired</option>
-              </select>
-            </div>
+                  <div className="form-group">
+                    <label>Sales Channel</label>
+                    <select
+                      name="Sales_Channel"
+                      value={item.Sales_Channel}
+                      onChange={(event) => handleACItemChange(index, event)}
+                    >
+                      <option value="Showroom">Showroom</option>
+                      <option value="Online">Online</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Warranty Start Date</label>
+                    <input
+                      type="date"
+                      name="Warranty_Start_Date"
+                      value={item.Warranty_Start_Date}
+                      onChange={(event) => handleACItemChange(index, event)}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Warranty End Date</label>
+                    <input
+                      type="date"
+                      name="Warranty_End_Date"
+                      value={item.Warranty_End_Date}
+                      onChange={(event) => handleACItemChange(index, event)}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Warranty Status</label>
+                    <select
+                      name="Warranty_Status"
+                      value={item.Warranty_Status}
+                      onChange={(event) => handleACItemChange(index, event)}
+                    >
+                      <option value="Active">Active</option>
+                      <option value="Cancelled">Cancelled</option>
+                      <option value="Expired">Expired</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
+
+          <button type="button" className="btn-secondary" onClick={addACItem}>
+            + Add Another AC Model
+          </button>
         </div>
 
         <div className="form-actions">
@@ -683,6 +760,24 @@ function AddSale() {
       </form>
     </div>
   );
+}
+
+function getValidACSaleItems(items) {
+  return items
+    .map((item) => ({
+      ...item,
+      AC_Model: String(item.AC_Model || "").trim(),
+      Serial_Number: String(item.Serial_Number || "").trim(),
+      Invoice_Number: String(item.Invoice_Number || "").trim(),
+      Quantity: item.Quantity || "1",
+      Price: item.Price || "",
+      Purchase_Date: item.Purchase_Date || "",
+      Sales_Channel: item.Sales_Channel || "Showroom",
+      Warranty_Start_Date: item.Warranty_Start_Date || "",
+      Warranty_End_Date: item.Warranty_End_Date || "",
+      Warranty_Status: item.Warranty_Status || "Active",
+    }))
+    .filter((item) => item.AC_Model);
 }
 
 function findCustomerByPhone(customers, phone) {

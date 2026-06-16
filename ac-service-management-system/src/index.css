@@ -1250,6 +1250,47 @@ button.view-link:disabled {
   margin-top: 2px;
 }
 
+.multi-ac-list {
+  padding: 22px 22px 0;
+}
+
+.multi-ac-item {
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.multi-ac-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #F3F4F6;
+  background: #FAFBFC;
+}
+
+.multi-ac-item-header h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.multi-ac-item-header p {
+  font-size: 12px;
+  color: #6B7280;
+  margin-top: 2px;
+}
+
+.multi-ac-item .form-grid {
+  padding: 16px;
+}
+
+.multi-ac-list + .btn-secondary {
+  margin: 0 22px 22px;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
