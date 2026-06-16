@@ -121,6 +121,7 @@ function CustomerProfile() {
                   <p><strong>AC ID:</strong> {acId}</p>
                   <p><strong>Model:</strong> {getValue(unit, ["AC_Model"])}</p>
                   <p><strong>Serial:</strong> {getValue(unit, ["Serial_Number"])}</p>
+                  <p><strong>Invoice:</strong> {getValue(unit, ["Invoice_Number", "Invoice Number"])}</p>
                   <p>
                     <strong>Warranty:</strong>{" "}
                     <span className={`status-badge ${getStatusClass(getValue(unit, ["Warranty_Status"]))}`}>
