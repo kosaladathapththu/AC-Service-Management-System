@@ -320,7 +320,7 @@ function AddService() {
                 <option value="Outsourced">Outsourced</option>
               </select>
               <span className="form-hint">
-                In-house technicians do not need a technician payment.
+                {/* In-house technicians do not need a technician payment. */}
               </span>
             </div>
 
@@ -336,7 +336,7 @@ function AddService() {
                 disabled={formData.Technician_Type !== "Outsourced"}
               />
               <span className="form-hint">
-                Enter only when the service technician is outsourced.
+                {/* Enter only when the service technician is outsourced. */}
               </span>
             </div>
 
