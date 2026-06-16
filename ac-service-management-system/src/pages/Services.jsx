@@ -903,7 +903,7 @@ function Services() {
                     disabled={editFormData.Technician_Type !== "Outsourced"}
                   />
                   <span className="form-hint">
-                    Company payment for outsourced service technicians only.
+                    {/* Company payment for outsourced service technicians only. */}
                   </span>
                 </div>
 
