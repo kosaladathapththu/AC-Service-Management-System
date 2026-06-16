@@ -190,8 +190,16 @@ function CustomerProfile() {
                       {inst.Installation_Type}
                     </span>
                   )}
+                  <span className={`status-badge ${getInstallationTypeClass(inst.Technician_type)}`}>
+                    Tech: {inst.Technician_type || "In-house"}
+                  </span>
                   {inst.Outsource_Payment && (
                     <span className="status-neutral">{formatPrice(inst.Outsource_Payment)}</span>
+                  )}
+                  {inst.Installation_Payment_Date && (
+                    <span className="status-neutral">
+                      Paid {formatDate(inst.Installation_Payment_Date)}
+                    </span>
                   )}
                 </div>
               </div>

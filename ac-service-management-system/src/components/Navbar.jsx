@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+﻿import { NavLink } from "react-router-dom";
 
 function Navbar() {
   return (
@@ -9,7 +9,7 @@ function Navbar() {
       </div>
 
       <div className="navbar-actions">
-        <NavLink
+        {/* <NavLink
           to="/data-sync"
           className={({ isActive }) =>
             isActive ? "data-sync-nav active" : "data-sync-nav"
@@ -19,7 +19,7 @@ function Navbar() {
         >
           <i className="ti ti-refresh" aria-hidden="true"></i>
           <span>Data Sync</span>
-        </NavLink>
+        </NavLink> */}
 
         <div className="admin-box">
           <span>Admin</span>

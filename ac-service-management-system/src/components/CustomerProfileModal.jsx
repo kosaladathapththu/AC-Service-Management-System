@@ -68,6 +68,10 @@ function CustomerProfileModal({ profile, onClose }) {
             >
               <span>AC: {item.AC_ID || "-"}</span>
               <span>{formatDate(item.Installation_Date)}</span>
+              {item.Installation_Payment_Date && (
+                <span>Paid {formatDate(item.Installation_Payment_Date)}</span>
+              )}
+              <span>Tech: {item.Technician_type || "In-house"}</span>
               <span
                 className={`status-badge ${getInstallationStatusClass(
                   item.Installation_Status

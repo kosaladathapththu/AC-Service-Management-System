@@ -29,7 +29,9 @@ function Installations() {
     Installation_Date: "",
     Installation_Type: "In-house",
     Technician_Name: "",
+    Technician_type: "In-house",
     Outsource_Payment: "",
+    Installation_Payment_Date: "",
     Installation_Status: "Pending",
     Notes: "",
   });
@@ -66,7 +68,9 @@ function Installations() {
       Installation_Date: formatDateForInput(installation.Installation_Date),
       Installation_Type: installation.Installation_Type || "In-house",
       Technician_Name: installation.Technician_Name || "",
+      Technician_type: installation.Technician_type || "In-house",
       Outsource_Payment: installation.Outsource_Payment || "",
+      Installation_Payment_Date: formatDateForInput(installation.Installation_Payment_Date),
       Installation_Status: installation.Installation_Status || "Pending",
       Notes: installation.Notes || "",
     });
@@ -78,7 +82,9 @@ function Installations() {
       Installation_Date: "",
       Installation_Type: "In-house",
       Technician_Name: "",
+      Technician_type: "In-house",
       Outsource_Payment: "",
+      Installation_Payment_Date: "",
       Installation_Status: "Pending",
       Notes: "",
     });
@@ -103,7 +109,18 @@ function Installations() {
 
   function handleEditChange(event) {
     const { name, value } = event.target;
-    setEditFormData((prev) => ({ ...prev, [name]: value }));
+    setEditFormData((prev) => {
+      if (name === "Technician_type" && value !== "Outsourced") {
+        return {
+          ...prev,
+          Technician_type: value,
+          Outsource_Payment: "",
+          Installation_Payment_Date: "",
+        };
+      }
+
+      return { ...prev, [name]: value };
+    });
   }
 
   async function handleUpdateInstallation(event) {
@@ -263,8 +280,16 @@ function Installations() {
                     <span className={`status-badge ${getInstallationTypeClass(installation.Installation_Type)}`}>
                       {installation.Installation_Type || "—"}
                     </span>
+                    <span className={`status-badge ${getTechnicianTypeClass(installation.Technician_type)}`}>
+                      Tech: {installation.Technician_type || "In-house"}
+                    </span>
                     {installation.Outsource_Payment && (
                       <span className="status-badge status-neutral">{formatPrice(installation.Outsource_Payment)}</span>
+                    )}
+                    {installation.Installation_Payment_Date && (
+                      <span className="status-badge status-neutral">
+                        Paid {formatDate(installation.Installation_Payment_Date)}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -326,8 +351,16 @@ function Installations() {
                       <span>{installation.Technician_Name || "—"}</span>
                     </div>
                     <div className="detail-item">
+                      <label>Technician Type</label>
+                      <span>{installation.Technician_type || "In-house"}</span>
+                    </div>
+                    <div className="detail-item">
                       <label>Outsource Payment</label>
                       <span>{formatPrice(installation.Outsource_Payment)}</span>
+                    </div>
+                    <div className="detail-item">
+                      <label>Outsourced Payment Date</label>
+                      <span>{formatDate(installation.Installation_Payment_Date)}</span>
                     </div>
                     {installation.Notes && (
                       <div className="detail-item detail-full">
@@ -361,6 +394,9 @@ function Installations() {
                 <div className="form-group">
                   <label>Installation Date</label>
                   <input type="date" name="Installation_Date" value={editFormData.Installation_Date} onChange={handleEditChange} />
+                  <span className="form-hint">
+                    Required for both in-house and outsourced installations.
+                  </span>
                 </div>
                 <div className="form-group">
                   <label>Installation Type</label>
@@ -374,9 +410,37 @@ function Installations() {
                   <input type="text" name="Technician_Name" value={editFormData.Technician_Name} onChange={handleEditChange} />
                 </div>
                 <div className="form-group">
-                  <label>Outsource Payment</label>
-                  <input type="number" name="Outsource_Payment" value={editFormData.Outsource_Payment} onChange={handleEditChange} min="0" />
+                  <label>Technician Type</label>
+                  <select name="Technician_type" value={editFormData.Technician_type} onChange={handleEditChange}>
+                    <option value="In-house">In-house</option>
+                    <option value="Outsourced">Outsourced</option>
+                  </select>
                 </div>
+                <div className="form-group">
+                  <label>Outsource Payment</label>
+                  <input
+                    type="number"
+                    name="Outsource_Payment"
+                    value={editFormData.Outsource_Payment}
+                    onChange={handleEditChange}
+                    min="0"
+                    disabled={editFormData.Technician_type !== "Outsourced"}
+                  />
+                  <span className="form-hint">
+                    In-house technicians are free.
+                  </span>
+                </div>
+                {editFormData.Technician_type === "Outsourced" && (
+                  <div className="form-group">
+                    <label>Outsourced Payment Date</label>
+                    <input
+                      type="date"
+                      name="Installation_Payment_Date"
+                      value={editFormData.Installation_Payment_Date}
+                      onChange={handleEditChange}
+                    />
+                  </div>
+                )}
                 <div className="form-group">
                   <label>Installation Status</label>
                   <select name="Installation_Status" value={editFormData.Installation_Status} onChange={handleEditChange}>
@@ -417,7 +481,9 @@ function installationMatchesSearch(installation, customers, query) {
     "Installation_Date",
     "Installation_Type",
     "Technician_Name",
+    "Technician_type",
     "Outsource_Payment",
+    "Installation_Payment_Date",
     "Installation_Status",
     "Notes",
   ]);
@@ -494,6 +560,14 @@ function getInstallationStatusClass(status) {
 
 function getInstallationTypeClass(type) {
   if (!type) return "";
+  const v = String(type).toLowerCase();
+  if (v === "in-house") return "status-active";
+  if (v === "outsourced") return "status-expired";
+  return "";
+}
+
+function getTechnicianTypeClass(type) {
+  if (!type) return "status-active";
   const v = String(type).toLowerCase();
   if (v === "in-house") return "status-active";
   if (v === "outsourced") return "status-expired";

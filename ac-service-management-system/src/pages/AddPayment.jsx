@@ -506,7 +506,7 @@ function AddPayment() {
             </div>
 
             <div className="form-group">
-              <label>Payment Date</label>
+              <label>Customer Payment Date</label>
               <input
                 type="date"
                 name="Payment_Date"

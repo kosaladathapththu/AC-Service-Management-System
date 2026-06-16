@@ -17,7 +17,9 @@ function AddInstallation() {
     Installation_Date: today,
     Installation_Type: "In-house",
     Technician_Name: "",
+    Technician_type: "In-house",
     Outsource_Payment: "",
+    Installation_Payment_Date: "",
     Installation_Status: "Pending",
     Free_Service_Count: "3",
     Notes: "",
@@ -99,7 +101,18 @@ function AddInstallation() {
       return;
     }
 
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      if (name === "Technician_type" && value !== "Outsourced") {
+        return {
+          ...prev,
+          Technician_type: value,
+          Outsource_Payment: "",
+          Installation_Payment_Date: "",
+        };
+      }
+
+      return { ...prev, [name]: value };
+    });
   }
 
   async function handleSubmit(event) {
@@ -336,6 +349,9 @@ function AddInstallation() {
                 onChange={handleChange}
                 required
               />
+              <span className="form-hint">
+                Required for both in-house and outsourced installations.
+              </span>
             </div>
           </div>
         </div>
@@ -345,7 +361,10 @@ function AddInstallation() {
             <div className="form-card-icon">🔧</div>
             <div>
               <h3>Installation Details</h3>
-              <p>Technician, type, status, free services, and notes.</p>
+              <p>
+                Installation date is recorded for all jobs. Outsource payment is
+                only for outsourced technicians.
+              </p>
             </div>
           </div>
 
@@ -374,6 +393,18 @@ function AddInstallation() {
             </div>
 
             <div className="form-group">
+              <label>Technician Type</label>
+              <select
+                name="Technician_type"
+                value={formData.Technician_type}
+                onChange={handleChange}
+              >
+                <option value="In-house">In-house</option>
+                <option value="Outsourced">Outsourced</option>
+              </select>
+            </div>
+
+            <div className="form-group">
               <label>Outsource Payment (LKR)</label>
               <input
                 type="number"
@@ -382,11 +413,28 @@ function AddInstallation() {
                 onChange={handleChange}
                 min="0"
                 placeholder="e.g. 5000"
+                disabled={formData.Technician_type !== "Outsourced"}
               />
               <span className="form-hint">
-                Leave blank if in-house installation.
+                In-house technicians are free. Enter payment only for outsourced
+                technicians.
               </span>
             </div>
+
+            {formData.Technician_type === "Outsourced" && (
+              <div className="form-group">
+                <label>Outsourced Payment Date</label>
+                <input
+                  type="date"
+                  name="Installation_Payment_Date"
+                  value={formData.Installation_Payment_Date}
+                  onChange={handleChange}
+                />
+                <span className="form-hint">
+                  Date paid to the outsourced technician.
+                </span>
+              </div>
+            )}
 
             <div className="form-group">
               <label>Installation Status</label>
