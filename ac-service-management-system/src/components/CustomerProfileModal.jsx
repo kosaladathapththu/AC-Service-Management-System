@@ -92,6 +92,9 @@ function CustomerProfileModal({ profile, onClose }) {
               {item.Technician_Payment && (
                 <span>Tech Pay {formatPrice(item.Technician_Payment)}</span>
               )}
+              {item.Service_Completed_Date && (
+                <span>Completed {formatDate(item.Service_Completed_Date)}</span>
+              )}
               <span
                 className={`status-badge ${getServiceStatusClass(
                   item.Service_Status

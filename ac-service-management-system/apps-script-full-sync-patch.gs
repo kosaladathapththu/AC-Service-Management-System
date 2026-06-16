@@ -920,6 +920,7 @@ function syncPatchFindOrCreateService(context, record, service, customerId, acId
     Technician_Type: "In-house",
     Technician_Payment: "",
     Service_Status: serviceStatus,
+    Service_Completed_Date: serviceStatus === "Completed" ? service.date || service.paymentDate || "" : "",
     Payment_Required: service.paymentAmount ? "Yes" : "No",
     Notes: syncPatchJoinNotes([
       "Imported from " + record.sourceSystem + " " + record.sourceSheet + ".",

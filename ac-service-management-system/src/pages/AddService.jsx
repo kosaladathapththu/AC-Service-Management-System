@@ -24,6 +24,7 @@ function AddService() {
     Technician_Type: "In-house",
     Technician_Payment: "",
     Service_Status: "Pending",
+    Service_Completed_Date: "",
     Payment_Required: "No",
     Notes: "",
   });
@@ -78,6 +79,18 @@ function AddService() {
       return;
     }
 
+    if (name === "Service_Status") {
+      setFormData((prev) => ({
+        ...prev,
+        Service_Status: value,
+        Service_Completed_Date:
+          value === "Completed"
+            ? prev.Service_Completed_Date || today
+            : prev.Service_Completed_Date,
+      }));
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   }
 
@@ -101,6 +114,7 @@ function AddService() {
         Technician_Type: "In-house",
         Technician_Payment: "",
         Service_Status: "Pending",
+        Service_Completed_Date: "",
         Payment_Required: "No",
         Notes: "",
       });
@@ -348,6 +362,19 @@ function AddService() {
                 <option value="Rescheduled">Rescheduled</option>
                 <option value="Cancelled">Cancelled</option>
               </select>
+            </div>
+
+            <div className="form-group">
+              <label>Service Completed Date</label>
+              <input
+                type="date"
+                name="Service_Completed_Date"
+                value={formData.Service_Completed_Date}
+                onChange={handleChange}
+              />
+              <span className="form-hint">
+                Fill when the service is completed.
+              </span>
             </div>
 
             <div className="form-group">

@@ -244,6 +244,11 @@ function CustomerProfile() {
                       Tech Pay {formatPrice(svc.Technician_Payment)}
                     </span>
                   )}
+                  {svc.Service_Completed_Date && (
+                    <span className="status-neutral">
+                      Completed {formatDate(svc.Service_Completed_Date)}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

@@ -47,6 +47,7 @@ function buildAnnualServiceRows(payment) {
     Technician_Type: "In-house",
     Technician_Payment: "",
     Service_Status: "Pending",
+    Service_Completed_Date: "",
     Payment_Required: "No",
     Notes: "Auto-created from paid annual service payment.",
   }));

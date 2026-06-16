@@ -42,6 +42,7 @@ function Services() {
     Technician_Type: "In-house",
     Technician_Payment: "",
     Service_Status: "Pending",
+    Service_Completed_Date: "",
     Payment_Required: "No",
     Notes: "",
   });
@@ -206,6 +207,7 @@ function Services() {
       Technician_Type: service.Technician_Type || "In-house",
       Technician_Payment: service.Technician_Payment || "",
       Service_Status: service.Service_Status || "Pending",
+      Service_Completed_Date: formatDateForInput(service.Service_Completed_Date),
       Payment_Required: service.Payment_Required || "No",
       Notes: service.Notes || "",
     });
@@ -224,6 +226,7 @@ function Services() {
       Technician_Type: "In-house",
       Technician_Payment: "",
       Service_Status: "Pending",
+      Service_Completed_Date: "",
       Payment_Required: "No",
       Notes: "",
     });
@@ -247,6 +250,18 @@ function Services() {
         ...prev,
         Technician_Type: value,
         Technician_Payment: "",
+      }));
+      return;
+    }
+
+    if (name === "Service_Status") {
+      setEditFormData((prev) => ({
+        ...prev,
+        Service_Status: value,
+        Service_Completed_Date:
+          value === "Completed"
+            ? prev.Service_Completed_Date || new Date().toISOString().split("T")[0]
+            : prev.Service_Completed_Date,
       }));
       return;
     }
@@ -333,14 +348,22 @@ function Services() {
       setError("");
       setSuccessMessage("");
 
+      const completedDate =
+        service.Service_Completed_Date || new Date().toISOString().split("T")[0];
+
       await updateRecord("services", "Service_ID", service.Service_ID, {
         Service_Status: "Completed",
+        Service_Completed_Date: completedDate,
       });
 
       setServices((prev) =>
         prev.map((item) =>
           item.Service_ID === service.Service_ID
-            ? { ...item, Service_Status: "Completed" }
+            ? {
+                ...item,
+                Service_Status: "Completed",
+                Service_Completed_Date: completedDate,
+              }
             : item
         )
       );
@@ -652,6 +675,12 @@ function Services() {
                       </span>
                     )}
 
+                    {service.Service_Completed_Date && (
+                      <span className="status-badge status-active">
+                        Completed {formatDate(service.Service_Completed_Date)}
+                      </span>
+                    )}
+
                     {isPastDate(service.Service_Date) &&
                       ["pending", "rescheduled"].includes(
                         String(service.Service_Status || "").toLowerCase()
@@ -752,6 +781,11 @@ function Services() {
                     <div className="detail-item">
                       <label>Technician Payment</label>
                       <span>{formatPrice(service.Technician_Payment)}</span>
+                    </div>
+
+                    <div className="detail-item">
+                      <label>Service Completed Date</label>
+                      <span>{formatDate(service.Service_Completed_Date)}</span>
                     </div>
 
                     <div className="detail-item">
@@ -922,6 +956,19 @@ function Services() {
                 </div>
 
                 <div className="form-group">
+                  <label>Service Completed Date</label>
+                  <input
+                    type="date"
+                    name="Service_Completed_Date"
+                    value={editFormData.Service_Completed_Date}
+                    onChange={handleEditChange}
+                  />
+                  <span className="form-hint">
+                    Fill when the service is completed.
+                  </span>
+                </div>
+
+                <div className="form-group">
                   <label>Payment Required</label>
                   <select
                     name="Payment_Required"
@@ -986,6 +1033,7 @@ function serviceMatchesSearch(service, customers, query) {
     "Technician_Type",
     "Technician_Payment",
     "Service_Status",
+    "Service_Completed_Date",
     "Payment_Required",
     "Reminder_Status",
     "Notes",
