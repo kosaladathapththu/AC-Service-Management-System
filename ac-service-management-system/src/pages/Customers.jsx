@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { getAllData, updateRecord } from "../api/googleSheetApi";
+import { getAllData, saveCustomerLocation, updateRecord } from "../api/googleSheetApi";
+import { emptyLocationData } from "../utils/customerLocations";
 
 function Customers() {
   const [customers, setCustomers] = useState([]);
   const [acUnits, setAcUnits] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -17,6 +19,7 @@ function Customers() {
   const customersTopRef = useRef(null);
 
   const [editingCustomer, setEditingCustomer] = useState(null);
+  const [editLocations, setEditLocations] = useState([]);
   const [editFormData, setEditFormData] = useState({
     Customer_Name: "",
     Phone: "",
@@ -36,12 +39,14 @@ function Customers() {
     try {
       setLoading(true);
       setError("");
-      const [customersData, acUnitsData] = await Promise.all([
+      const [customersData, acUnitsData, locationData] = await Promise.all([
         getAllData("customers"),
         getAllData("acUnits"),
+        getAllData("customerLocations"),
       ]);
       setCustomers(customersData);
       setAcUnits(acUnitsData);
+      setLocations(locationData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -60,6 +65,16 @@ function Customers() {
     );
 
     setEditingCustomer(customer);
+    const customerId = getRawValue(customer, [
+      "Customer_ID", "customer_ID", "Customer ID", "id",
+    ]);
+    setEditLocations(
+      locations
+        .filter(
+          (location) => normalizeValue(location.Customer_ID) === normalizeValue(customerId)
+        )
+        .map((location) => ({ ...emptyLocationData(customerId), ...location }))
+    );
     setEditFormData({
       Customer_Name: customer.Customer_Name || "",
       Phone: customer.Phone || "",
@@ -74,6 +89,7 @@ function Customers() {
 
   function closeEditModal() {
     setEditingCustomer(null);
+    setEditLocations([]);
     setEditFormData({
       Customer_Name: "",
       Phone: "",
@@ -89,6 +105,37 @@ function Customers() {
   function handleEditChange(event) {
     const { name, value } = event.target;
     setEditFormData((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function addEditLocation() {
+    const customerId = getRawValue(editingCustomer, [
+      "Customer_ID", "customer_ID", "Customer ID", "id",
+    ]);
+    setEditLocations((previous) => [
+      ...previous,
+      { ...emptyLocationData(customerId), _temporaryKey: `new-${Date.now()}` },
+    ]);
+  }
+
+  function handleEditLocationChange(index, event) {
+    const { name, value } = event.target;
+    setEditLocations((previous) =>
+      previous.map((location, locationIndex) => {
+        if (name === "Is_Default" && value === "Yes") {
+          return locationIndex === index
+            ? { ...location, Is_Default: "Yes" }
+            : { ...location, Is_Default: "No" };
+        }
+
+        return locationIndex === index ? { ...location, [name]: value } : location;
+      })
+    );
+  }
+
+  function discardUnsavedLocation(index) {
+    setEditLocations((previous) =>
+      previous.filter((_, locationIndex) => locationIndex !== index)
+    );
   }
 
   async function handleUpdateCustomer(event) {
@@ -109,6 +156,9 @@ function Customers() {
         editFormData.Sales_Channel,
         acUnits
       );
+      for (const location of editLocations) {
+        await saveCustomerLocation({ ...location, Customer_ID: customerId });
+      }
       setSuccessMessage("Customer updated successfully.");
       closeEditModal();
       await loadCustomers();
@@ -139,18 +189,22 @@ function Customers() {
         const customerUnits = getCustomerACUnits(customer, acUnits);
         const primarySalesChannel = getPrimaryCustomerSalesChannel(customer, customerUnits);
         const salesChannels = getCustomerSalesChannels(customer, customerUnits);
+        const customerLocations = locations.filter(
+          (location) => normalizeValue(location.Customer_ID) === normalizeValue(customer.Customer_ID)
+        );
 
         return {
           customer,
           customerUnits,
           primarySalesChannel,
           salesChannels,
-          searchText: buildCustomerSearchText(customer, customerUnits),
-          searchFields: buildCustomerSearchFields(customer, customerUnits),
-          phoneText: buildCustomerPhoneSearchText(customer, customerUnits),
+          customerLocations,
+          searchText: buildCustomerSearchText(customer, customerUnits, customerLocations),
+          searchFields: buildCustomerSearchFields(customer, customerUnits, customerLocations),
+          phoneText: buildCustomerPhoneSearchText(customer, customerUnits, customerLocations),
         };
       }),
-    [customers, acUnits]
+    [customers, acUnits, locations]
   );
 
   function getFilteredCustomerRows() {
@@ -257,7 +311,7 @@ function Customers() {
         {filteredCustomerRows.length === 0 && <p className="empty-list">No customers found.</p>}
 
         {filteredCustomerRows.map((row, index) => {
-          const { customer, customerUnits, primarySalesChannel, salesChannels } = row;
+          const { customer, customerUnits, customerLocations, primarySalesChannel, salesChannels } = row;
           const customerId = getValue(customer, ["Customer_ID", "customer_ID", "Customer ID", "id"]);
           const customerName = getValue(customer, ["Customer_Name", "Customer Name", "name"]);
           const generatedNameInfo = getGeneratedCustomerNameInfo(customerName);
@@ -309,6 +363,9 @@ function Customers() {
                     <span className={`customer-type-badge ${salesChannelClass}`}>
                       {salesChannelLabel}
                     </span>
+                    {customerLocations.length > 0 && (
+                      <span className="status-neutral">{customerLocations.length} branch location(s)</span>
+                    )}
                   </div>
                 </div>
 
@@ -367,6 +424,59 @@ function Customers() {
                       <div className="detail-item detail-full">
                         <label>Notes</label>
                         <span>{notes}</span>
+                      </div>
+                    )}
+                    {customerLocations.length > 0 && (
+                      <div className="detail-item detail-full customer-branches-detail">
+                        <label>Branches / Locations</label>
+                        <div className="customer-branch-grid">
+                          {customerLocations.map((location) => {
+                            const branchUnits = customerUnitsForLocation(
+                              customerUnits,
+                              location.Location_ID
+                            );
+
+                            return (
+                              <section className="customer-branch-card" key={location.Location_ID}>
+                                <div className="customer-branch-card-header">
+                                  <div>
+                                    <h4>{location.Branch_Name || "Unnamed Branch"}</h4>
+                                    <small>{location.Location_ID}</small>
+                                  </div>
+                                  <div className="record-badge-row">
+                                    {isYesValue(location.Is_Default) && (
+                                      <span className="status-badge status-info">Default</span>
+                                    )}
+                                    <span className={`status-badge ${normalizeValue(location.Status || "Active") === "inactive" ? "status-cancelled" : "status-active"}`}>
+                                      {location.Status || "Active"}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="customer-branch-fields">
+                                  <div><strong>Contact Person</strong><span>{location.Contact_Person || "—"}</span></div>
+                                  <div><strong>Phone</strong><span>{location.Phone || "—"}</span></div>
+                                  <div className="customer-branch-address"><strong>Address</strong><span>{location.Address || "—"}</span></div>
+                                  {location.Notes && <div className="customer-branch-address"><strong>Notes</strong><span>{location.Notes}</span></div>}
+                                </div>
+
+                                <div className="customer-branch-footer">
+                                  <span>{branchUnits.length} AC record(s)</span>
+                                  {branchUnits.length > 0 && (
+                                    <span className="customer-branch-unit-list">
+                                      {branchUnits.map((unit) => `${unit.AC_ID || "AC"}: ${unit.AC_Model || "Unknown model"}`).join(" · ")}
+                                    </span>
+                                  )}
+                                  {location.Google_Map_Link && (
+                                    <a href={location.Google_Map_Link} target="_blank" rel="noreferrer" className="view-link">
+                                      Open Branch Map
+                                    </a>
+                                  )}
+                                </div>
+                              </section>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -428,6 +538,91 @@ function Customers() {
                   <textarea name="Notes" value={editFormData.Notes} onChange={handleEditChange} rows="3"></textarea>
                 </div>
               </div>
+
+              <div className="edit-customer-locations">
+                <div className="edit-customer-locations-header">
+                  <div>
+                    <h4>Branches / Service Locations</h4>
+                    <p>Optional. Add or update separate branch contact and address details.</p>
+                  </div>
+                  <button type="button" className="btn-secondary" onClick={addEditLocation}>
+                    + Add Branch
+                  </button>
+                </div>
+
+                {editLocations.length === 0 ? (
+                  <p className="edit-customer-locations-empty">
+                    No separate branches. This customer uses the main address above.
+                  </p>
+                ) : (
+                  <div className="edit-location-list">
+                    {editLocations.map((location, index) => (
+                      <section
+                        className="edit-location-card"
+                        key={location.Location_ID || location._temporaryKey || index}
+                      >
+                        <div className="edit-location-card-header">
+                          <div>
+                            <strong>Branch {index + 1}</strong>
+                            <small>{location.Location_ID || "New location"}</small>
+                          </div>
+                          {!location.Location_ID && (
+                            <button
+                              type="button"
+                              className="cancel-btn"
+                              onClick={() => discardUnsavedLocation(index)}
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="form-grid">
+                          <div className="form-group">
+                            <label>Branch Name *</label>
+                            <input name="Branch_Name" value={location.Branch_Name} onChange={(event) => handleEditLocationChange(index, event)} required />
+                          </div>
+                          <div className="form-group">
+                            <label>Contact Person</label>
+                            <input name="Contact_Person" value={location.Contact_Person} onChange={(event) => handleEditLocationChange(index, event)} />
+                          </div>
+                          <div className="form-group">
+                            <label>Branch Phone</label>
+                            <input name="Phone" value={location.Phone} onChange={(event) => handleEditLocationChange(index, event)} />
+                          </div>
+                          <div className="form-group">
+                            <label>Status</label>
+                            <select name="Status" value={location.Status} onChange={(event) => handleEditLocationChange(index, event)}>
+                              <option value="Active">Active</option>
+                              <option value="Inactive">Inactive</option>
+                            </select>
+                          </div>
+                          <div className="form-group full-width">
+                            <label>Branch Address *</label>
+                            <textarea name="Address" value={location.Address} onChange={(event) => handleEditLocationChange(index, event)} rows="2" required />
+                          </div>
+                          <div className="form-group">
+                            <label>Google Map Link</label>
+                            <input name="Google_Map_Link" value={location.Google_Map_Link} onChange={(event) => handleEditLocationChange(index, event)} />
+                          </div>
+                          <div className="form-group">
+                            <label>Default Location</label>
+                            <select name="Is_Default" value={location.Is_Default} onChange={(event) => handleEditLocationChange(index, event)}>
+                              <option value="No">No</option>
+                              <option value="Yes">Yes</option>
+                            </select>
+                          </div>
+                          <div className="form-group full-width">
+                            <label>Branch Notes</label>
+                            <textarea name="Notes" value={location.Notes} onChange={(event) => handleEditLocationChange(index, event)} rows="2" />
+                          </div>
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="form-actions">
                 <button type="button" className="cancel-btn" onClick={closeEditModal}>Cancel</button>
                 <button type="submit" disabled={saving}>{saving ? "Updating..." : "Update Customer"}</button>
@@ -463,6 +658,16 @@ async function updateCustomerACUnitSalesChannels(customerId, salesChannel, acUni
 
 function normalizeValue(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+function customerUnitsForLocation(customerUnits, locationId) {
+  return (customerUnits || []).filter(
+    (unit) => normalizeValue(unit.Location_ID) === normalizeValue(locationId)
+  );
+}
+
+function isYesValue(value) {
+  return ["yes", "true", "1"].includes(normalizeValue(value));
 }
 
 function formatDateForInput(value) {
@@ -529,14 +734,15 @@ function normalizeChannel(value) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-function buildCustomerSearchText(customer, customerUnits) {
+function buildCustomerSearchText(customer, customerUnits, customerLocations = []) {
   return normalizeSearchText([
     ...Object.values(customer || {}),
     ...customerUnits.flatMap((unit) => Object.values(unit || {})),
+    ...customerLocations.flatMap((location) => Object.values(location || {})),
   ].join(" "));
 }
 
-function buildCustomerSearchFields(customer, customerUnits) {
+function buildCustomerSearchFields(customer, customerUnits, customerLocations = []) {
   return {
     id: normalizeSearchText([
       customer.Customer_ID,
@@ -551,13 +757,18 @@ function buildCustomerSearchFields(customer, customerUnits) {
       customer.name,
       customer.Name,
     ].join(" ")),
-    phone: buildCustomerPhoneSearchText(customer, customerUnits),
+    phone: buildCustomerPhoneSearchText(customer, customerUnits, customerLocations),
     address: normalizeSearchText([
       customer.Address,
       customer.address,
       customer.Google_Map_Link,
       customer.Google_Map_Li,
       customer["Google Map Link"],
+      ...customerLocations.flatMap((location) => [
+        location.Branch_Name,
+        location.Address,
+        location.Google_Map_Link,
+      ]),
     ].join(" ")),
     invoice: normalizeSearchText(
       customerUnits
@@ -590,10 +801,11 @@ function buildCustomerSearchFields(customer, customerUnits) {
   };
 }
 
-function buildCustomerPhoneSearchText(customer, customerUnits) {
+function buildCustomerPhoneSearchText(customer, customerUnits, customerLocations = []) {
   const phones = [
     ...getPhoneValues(customer),
     ...customerUnits.flatMap(getPhoneValues),
+    ...customerLocations.flatMap(getPhoneValues),
   ];
 
   return phones
@@ -667,10 +879,6 @@ function normalizeSearchText(value) {
     .toLowerCase()
     .replace(/\s+/g, " ")
     .trim();
-}
-
-function normalizePhone(value) {
-  return getNormalizedPhoneCandidates(value)[0] || "";
 }
 
 function getPhoneValues(record) {

@@ -1,5 +1,6 @@
 import PaymentEvidence from "./PaymentEvidence";
 import { getPaymentEvidence } from "../utils/paymentEvidence";
+import { getLocationLabel } from "../utils/customerLocations";
 
 function CustomerProfileModal({ profile, onClose }) {
   const {
@@ -9,6 +10,7 @@ function CustomerProfileModal({ profile, onClose }) {
     services = [],
     payments = [],
     complaints = [],
+    locations = [],
   } = profile || {};
 
   const customerId = getValue(customer, [
@@ -44,6 +46,17 @@ function CustomerProfileModal({ profile, onClose }) {
           {customerId} | {phone} | {email}
         </p>
         <p className="dashboard-profile-address">{address}</p>
+
+        <DashboardProfileSection title="Branches / Locations" count={locations.length}>
+          {locations.map((location) => (
+            <MiniRecord key={location.Location_ID} id={location.Location_ID}>
+              <span>{getLocationLabel(location)}</span>
+              <span>{location.Phone || "No branch phone"}</span>
+              <span>{location.Address || "No branch address"}</span>
+              <span className="status-neutral">{location.Status || "Active"}</span>
+            </MiniRecord>
+          ))}
+        </DashboardProfileSection>
 
         <DashboardProfileSection title="AC Units" count={getTotalQuantity(acUnits)}>
           {acUnits.map((unit, index) => (

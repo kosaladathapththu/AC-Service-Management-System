@@ -4,6 +4,7 @@ import { addInstallation, getAllData } from "../api/googleSheetApi";
 import CustomerSearchSelect, {
   getFilteredCustomers,
 } from "../components/CustomerSearchSelect";
+import CustomerLocationSelect from "../components/CustomerLocationSelect";
 
 function AddInstallation() {
   const [searchParams] = useSearchParams();
@@ -14,6 +15,7 @@ function AddInstallation() {
   const emptyForm = {
     Customer_ID: "",
     AC_ID: "",
+    Location_ID: "",
     Installation_Date: today,
     Installation_Type: "In-house",
     Technician_Name: "",
@@ -28,6 +30,7 @@ function AddInstallation() {
   const [customers, setCustomers] = useState([]);
   const [acUnits, setAcUnits] = useState([]);
   const [installations, setInstallations] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [filteredACUnits, setFilteredACUnits] = useState([]);
   const [customerSearch, setCustomerSearch] = useState("");
 
@@ -47,15 +50,17 @@ function AddInstallation() {
       setLoadingData(true);
       setError("");
 
-      const [customersData, acUnitsData, installationsData] = await Promise.all([
+      const [customersData, acUnitsData, installationsData, locationData] = await Promise.all([
         getAllData("customers"),
         getAllData("acUnits"),
         getAllData("installations"),
+        getAllData("customerLocations"),
       ]);
 
       setCustomers(customersData);
       setAcUnits(acUnitsData);
       setInstallations(installationsData);
+      setLocations(locationData);
 
       if (preselectedCustomerId) {
         const availableUnits = getUninstalledACUnits(acUnitsData, installationsData).filter(
@@ -100,6 +105,13 @@ function AddInstallation() {
       selectCustomerById(value);
       return;
     }
+
+    if (name === "AC_ID") {
+      const unit = acUnits.find((item) => normalizeValue(item.AC_ID) === normalizeValue(value));
+      setFormData((prev) => ({ ...prev, AC_ID: value, Location_ID: unit?.Location_ID || "" }));
+      return;
+    }
+
 
     if (name === "Installation_Type") {
       setFormData((prev) => ({
@@ -202,7 +214,7 @@ function AddInstallation() {
     );
 
     setFilteredACUnits(customerACUnits);
-    setFormData((prev) => ({ ...prev, Customer_ID: customerId, AC_ID: "" }));
+    setFormData((prev) => ({ ...prev, Customer_ID: customerId, AC_ID: "", Location_ID: "" }));
 
     if (customer) {
       setCustomerSearch(`${customerId} - ${getCustomerName(customer)}`);
@@ -352,6 +364,15 @@ function AddInstallation() {
                 </span>
               )}
             </div>
+
+            <CustomerLocationSelect
+              customerId={formData.Customer_ID}
+              locations={locations}
+              value={formData.Location_ID}
+              onChange={handleChange}
+              disabled={!formData.Customer_ID}
+              label="Installation Location"
+            />
 
             <div className="form-group">
               <label>
@@ -565,6 +586,7 @@ function isACUnitAlreadyInInstallation(acId, installations) {
 function normalizeValue(value) {
   return String(value || "").trim().toLowerCase();
 }
+
 
 function getCustomerOptions(filteredCustomers, selectedCustomer) {
   if (!selectedCustomer) return filteredCustomers;

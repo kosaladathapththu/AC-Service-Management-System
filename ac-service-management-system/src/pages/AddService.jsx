@@ -3,18 +3,21 @@ import { addService, getAllData } from "../api/googleSheetApi";
 import CustomerSearchSelect, {
   getFilteredCustomers,
 } from "../components/CustomerSearchSelect";
+import CustomerLocationSelect from "../components/CustomerLocationSelect";
 
 function AddService() {
   const today = new Date().toISOString().split("T")[0];
 
   const [customers, setCustomers] = useState([]);
   const [acUnits, setAcUnits] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [filteredACUnits, setFilteredACUnits] = useState([]);
   const [customerSearch, setCustomerSearch] = useState("");
 
   const [formData, setFormData] = useState({
     Customer_ID: "",
     AC_ID: "",
+    Location_ID: "",
     Service_Date: today,
     Service_Year: "Year 1",
     Service_No: "1",
@@ -42,10 +45,14 @@ function AddService() {
     try {
       setLoadingData(true);
       setError("");
-      const customersData = await getAllData("customers");
-      const acUnitsData = await getAllData("acUnits");
+      const [customersData, acUnitsData, locationData] = await Promise.all([
+        getAllData("customers"),
+        getAllData("acUnits"),
+        getAllData("customerLocations"),
+      ]);
       setCustomers(customersData);
       setAcUnits(acUnitsData);
+      setLocations(locationData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -79,6 +86,12 @@ function AddService() {
       return;
     }
 
+    if (name === "AC_ID") {
+      const unit = acUnits.find((item) => normalizeValue(item.AC_ID) === normalizeValue(value));
+      setFormData((prev) => ({ ...prev, AC_ID: value, Location_ID: unit?.Location_ID || "" }));
+      return;
+    }
+
     if (name === "Service_Status") {
       setFormData((prev) => ({
         ...prev,
@@ -105,6 +118,7 @@ function AddService() {
       setFormData({
         Customer_ID: "",
         AC_ID: "",
+        Location_ID: "",
         Service_Date: today,
         Service_Year: "Year 1",
         Service_No: "1",
@@ -149,7 +163,7 @@ function AddService() {
     );
 
     setFilteredACUnits(customerACUnits);
-    setFormData((prev) => ({ ...prev, Customer_ID: customerId, AC_ID: "" }));
+    setFormData((prev) => ({ ...prev, Customer_ID: customerId, AC_ID: "", Location_ID: "" }));
 
     if (customer) {
       setCustomerSearch(`${customerId} - ${getCustomerName(customer)}`);
@@ -236,6 +250,15 @@ function AddService() {
                 <span className="form-hint">No AC units found for this customer.</span>
               )}
             </div>
+
+            <CustomerLocationSelect
+              customerId={formData.Customer_ID}
+              locations={locations}
+              value={formData.Location_ID}
+              onChange={handleChange}
+              disabled={!formData.Customer_ID}
+              label="Service Location"
+            />
 
             <div className="form-group">
               <label>Service Date <span className="required">*</span></label>

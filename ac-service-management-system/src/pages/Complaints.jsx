@@ -6,6 +6,8 @@ import {
   updateRecord,
 } from "../api/googleSheetApi";
 import CustomerProfileModal from "../components/CustomerProfileModal";
+import CustomerLocationSelect from "../components/CustomerLocationSelect";
+import { findLocation, getLocationLabel } from "../utils/customerLocations";
 import {
   formatCustomerDisplay,
   getRecordCustomerName,
@@ -18,6 +20,7 @@ function Complaints() {
 
   const [complaints, setComplaints] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -29,6 +32,7 @@ function Complaints() {
 
   const [editingComplaint, setEditingComplaint] = useState(null);
   const [editFormData, setEditFormData] = useState({
+    Location_ID: "",
     Complaint_Date: "",
     Issue_Description: "",
     Technician_Name: "",
@@ -48,13 +52,15 @@ function Complaints() {
       setLoading(true);
       setError("");
 
-      const [complaintsData, customersData] = await Promise.all([
+      const [complaintsData, customersData, locationData] = await Promise.all([
         getAllData("complaints"),
         getAllData("customers"),
+        getAllData("customerLocations"),
       ]);
 
       setComplaints(complaintsData);
       setCustomers(customersData);
+      setLocations(locationData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -118,6 +124,7 @@ function Complaints() {
     setEditingComplaint(complaint);
 
     setEditFormData({
+      Location_ID: complaint.Location_ID || "",
       Complaint_Date: formatDateForInput(complaint.Complaint_Date),
       Issue_Description: complaint.Issue_Description || "",
       Technician_Name: complaint.Technician_Name || "",
@@ -133,6 +140,7 @@ function Complaints() {
     setEditingComplaint(null);
 
     setEditFormData({
+      Location_ID: "",
       Complaint_Date: "",
       Issue_Description: "",
       Technician_Name: "",
@@ -404,6 +412,9 @@ function Complaints() {
                         {complaint.Issue_Description.length > 60 ? "…" : ""}
                       </span>
                     )}
+                    {findLocation(locations, complaint.Location_ID) && (
+                      <span className="status-neutral">📍 {getLocationLabel(findLocation(locations, complaint.Location_ID))}</span>
+                    )}
                   </div>
                 </div>
 
@@ -505,6 +516,13 @@ function Complaints() {
 
             <form onSubmit={handleUpdateComplaint}>
               <div className="form-grid">
+                <CustomerLocationSelect
+                  customerId={editingComplaint.Customer_ID}
+                  locations={locations}
+                  value={editFormData.Location_ID}
+                  onChange={handleEditChange}
+                  label="Complaint Location"
+                />
                 <div className="form-group">
                   <label>Complaint Date</label>
                   <input

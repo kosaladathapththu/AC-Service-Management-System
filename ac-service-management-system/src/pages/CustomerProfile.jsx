@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getCustomerProfile } from "../api/googleSheetApi";
+import { getCustomerProfile, saveCustomerLocation } from "../api/googleSheetApi";
 import PaymentEvidence from "../components/PaymentEvidence";
 import { getPaymentEvidence } from "../utils/paymentEvidence";
+import {
+  emptyLocationData,
+  findLocation,
+  getLocationLabel,
+  resolveRecordLocation,
+} from "../utils/customerLocations";
 
 function CustomerProfile() {
   const { id } = useParams();
@@ -10,6 +16,8 @@ function CustomerProfile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [savingLocation, setSavingLocation] = useState(false);
+  const [locationForm, setLocationForm] = useState(null);
 
   useEffect(() => {
     loadCustomerProfile();
@@ -25,6 +33,25 @@ function CustomerProfile() {
       setError(error.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  function editLocation(location = null) {
+    setLocationForm(location ? { ...location } : emptyLocationData(id));
+  }
+
+  async function handleSaveLocation(event) {
+    event.preventDefault();
+    try {
+      setSavingLocation(true);
+      setError("");
+      await saveCustomerLocation({ ...locationForm, Customer_ID: id });
+      setLocationForm(null);
+      await loadCustomerProfile();
+    } catch (saveError) {
+      setError(saveError.message);
+    } finally {
+      setSavingLocation(false);
     }
   }
 
@@ -65,6 +92,7 @@ function CustomerProfile() {
     services = [],
     payments = [],
     complaints = [],
+    locations = [],
   } = profile;
 
   const customerId = getValue(customer, ["customer_ID", "Customer_ID", "Customer ID", "id"]);
@@ -89,6 +117,63 @@ function CustomerProfile() {
         </div>
         <Link to="/customers" className="view-link">← Back to Customers</Link>
       </div>
+
+      <div className="profile-section-card">
+        <div className="profile-section-header">
+          <h3>Branches / Service Locations</h3>
+          <button type="button" className="btn-primary" onClick={() => editLocation()}>
+            Add Location
+          </button>
+        </div>
+        {locations.length === 0 ? (
+          <p className="profile-section-empty">
+            No separate branches. Records use the customer&apos;s main address.
+          </p>
+        ) : (
+          <div className="location-card-grid">
+            {locations.map((location) => (
+              <div className="info-card location-card" key={location.Location_ID}>
+                <div className="location-card-heading">
+                  <h4>{getLocationLabel(location)}</h4>
+                  <button type="button" className="edit-btn" onClick={() => editLocation(location)}>Edit</button>
+                </div>
+                <p><strong>ID:</strong> {location.Location_ID}</p>
+                <p><strong>Contact:</strong> {location.Contact_Person || "—"}</p>
+                <p><strong>Phone:</strong> {location.Phone || "—"}</p>
+                <p><strong>Address:</strong> {location.Address || "—"}</p>
+                <p><strong>Status:</strong> {location.Status || "Active"}</p>
+                {location.Google_Map_Link && (
+                  <p><a className="view-link" href={location.Google_Map_Link} target="_blank" rel="noreferrer">Open Map</a></p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {locationForm && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>{locationForm.Location_ID ? "Edit Location" : "Add Location"}</h3>
+              <button type="button" className="modal-close" onClick={() => setLocationForm(null)}>×</button>
+            </div>
+            <form onSubmit={handleSaveLocation}>
+              <div className="form-grid">
+                <div className="form-group"><label>Branch Name *</label><input name="Branch_Name" value={locationForm.Branch_Name} onChange={(e) => setLocationForm((prev) => ({ ...prev, Branch_Name: e.target.value }))} required /></div>
+                <div className="form-group"><label>Contact Person</label><input name="Contact_Person" value={locationForm.Contact_Person} onChange={(e) => setLocationForm((prev) => ({ ...prev, Contact_Person: e.target.value }))} /></div>
+                <div className="form-group"><label>Phone</label><input name="Phone" value={locationForm.Phone} onChange={(e) => setLocationForm((prev) => ({ ...prev, Phone: e.target.value }))} /></div>
+                <div className="form-group"><label>Address *</label><input name="Address" value={locationForm.Address} onChange={(e) => setLocationForm((prev) => ({ ...prev, Address: e.target.value }))} required /></div>
+                <div className="form-group"><label>Google Map Link</label><input name="Google_Map_Link" value={locationForm.Google_Map_Link} onChange={(e) => setLocationForm((prev) => ({ ...prev, Google_Map_Link: e.target.value }))} /></div>
+                <div className="form-group"><label>Default</label><select name="Is_Default" value={locationForm.Is_Default} onChange={(e) => setLocationForm((prev) => ({ ...prev, Is_Default: e.target.value }))}><option value="No">No</option><option value="Yes">Yes</option></select></div>
+                <div className="form-group"><label>Status</label><select name="Status" value={locationForm.Status} onChange={(e) => setLocationForm((prev) => ({ ...prev, Status: e.target.value }))}><option value="Active">Active</option><option value="Inactive">Inactive</option></select></div>
+                <div className="form-group full-width"><label>Notes</label><textarea name="Notes" value={locationForm.Notes} onChange={(e) => setLocationForm((prev) => ({ ...prev, Notes: e.target.value }))} rows="3" /></div>
+              </div>
+              <div className="form-actions"><button type="button" className="btn-secondary" onClick={() => setLocationForm(null)}>Cancel</button><button type="submit" className="btn-primary" disabled={savingLocation}>{savingLocation ? "Saving..." : "Save Location"}</button></div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Customer info + warranty side by side */}
       <div className="profile-grid">
@@ -161,6 +246,7 @@ function CustomerProfile() {
                   {unit.Invoice_Number && (
                     <span className="status-neutral">Invoice: {unit.Invoice_Number}</span>
                   )}
+                  <LocationBadge location={findLocation(locations, unit.Location_ID)} />
                   <span className="record-date" style={{ fontSize: "12px", color: "#6B7280" }}>
                     Warranty: {formatDate(unit.Warranty_Start_Date)} – {formatDate(unit.Warranty_End_Date)}
                   </span>
@@ -209,6 +295,7 @@ function CustomerProfile() {
                       Paid {formatDate(inst.Installation_Payment_Date)}
                     </span>
                   )}
+                  <LocationBadge location={resolveRecordLocation(inst, acUnits, locations)} />
                 </div>
               </div>
             </div>
@@ -257,6 +344,7 @@ function CustomerProfile() {
                       Completed {formatDate(svc.Service_Completed_Date)}
                     </span>
                   )}
+                  <LocationBadge location={resolveRecordLocation(svc, acUnits, locations)} />
                 </div>
               </div>
             </div>
@@ -343,6 +431,7 @@ function CustomerProfile() {
                       {comp.Issue_Description.substring(0, 70)}{comp.Issue_Description.length > 70 ? "…" : ""}
                     </span>
                   )}
+                  <LocationBadge location={resolveRecordLocation(comp, acUnits, locations)} />
                 </div>
               </div>
             </div>
@@ -370,6 +459,11 @@ function ProfileSection({ title, count, children }) {
 }
 
 /* ── Formatters ── */
+function LocationBadge({ location }) {
+  if (!location) return null;
+  return <span className="status-neutral">📍 {getLocationLabel(location)}</span>;
+}
+
 function formatDate(value) {
   if (!value || value === "-") return "—";
   const date = new Date(value);

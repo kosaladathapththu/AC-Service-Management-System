@@ -1,6 +1,18 @@
-﻿import { NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 function Navbar() {
+  const [theme, setTheme] = useState(() =>
+    document.documentElement.dataset.theme === "dark" ? "dark" : "light"
+  );
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    localStorage.setItem("ac-service-theme", theme);
+  }, [theme]);
+
+  const nextTheme = theme === "dark" ? "light" : "dark";
+
   return (
     <header className="navbar">
       <div className="navbar-title">
@@ -9,17 +21,16 @@ function Navbar() {
       </div>
 
       <div className="navbar-actions">
-        {/* <NavLink
-          to="/data-sync"
-          className={({ isActive }) =>
-            isActive ? "data-sync-nav active" : "data-sync-nav"
-          }
-          aria-label="Open data sync"
-          title="Data Sync"
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={() => setTheme(nextTheme)}
+          aria-label={`Switch to ${nextTheme} mode`}
+          title={`Switch to ${nextTheme} mode`}
         >
-          <i className="ti ti-refresh" aria-hidden="true"></i>
-          <span>Data Sync</span>
-        </NavLink> */}
+          <i className={`ti ${theme === "dark" ? "ti-sun" : "ti-moon"}`} aria-hidden="true" />
+          <span>{theme === "dark" ? "Light" : "Dark"}</span>
+        </button>
 
         <div className="admin-box">
           <span>Admin</span>

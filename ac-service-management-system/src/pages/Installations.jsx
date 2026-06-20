@@ -5,6 +5,8 @@ import {
   updateRecord,
 } from "../api/googleSheetApi";
 import CustomerProfileModal from "../components/CustomerProfileModal";
+import CustomerLocationSelect from "../components/CustomerLocationSelect";
+import { findLocation, getLocationLabel } from "../utils/customerLocations";
 import {
   formatCustomerDisplay,
   getRecordCustomerName,
@@ -14,6 +16,7 @@ import { recordMatchesSearch } from "../utils/recordSearch";
 function Installations() {
   const [installations, setInstallations] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -26,6 +29,7 @@ function Installations() {
 
   const [editingInstallation, setEditingInstallation] = useState(null);
   const [editFormData, setEditFormData] = useState({
+    Location_ID: "",
     Installation_Date: "",
     Installation_Type: "In-house",
     Technician_Name: "",
@@ -44,13 +48,15 @@ function Installations() {
     try {
       setLoading(true);
       setError("");
-      const [installationsData, customersData] = await Promise.all([
+      const [installationsData, customersData, locationData] = await Promise.all([
         getAllData("installations"),
         getAllData("customers"),
+        getAllData("customerLocations"),
       ]);
 
       setInstallations(installationsData);
       setCustomers(customersData);
+      setLocations(locationData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -67,6 +73,7 @@ function Installations() {
     const technicianType = getInstallationTechnicianType(installation);
 
     setEditFormData({
+      Location_ID: installation.Location_ID || "",
       Installation_Date: formatDateForInput(installation.Installation_Date),
       Installation_Type: installation.Installation_Type || "In-house",
       Technician_Name: installation.Technician_Name || "",
@@ -81,6 +88,7 @@ function Installations() {
   function closeEditModal() {
     setEditingInstallation(null);
     setEditFormData({
+      Location_ID: "",
       Installation_Date: "",
       Installation_Type: "In-house",
       Technician_Name: "",
@@ -307,6 +315,9 @@ function Installations() {
                         Paid {formatDate(installation.Installation_Payment_Date)}
                       </span>
                     )}
+                    {findLocation(locations, installation.Location_ID) && (
+                      <span className="status-neutral">📍 {getLocationLabel(findLocation(locations, installation.Location_ID))}</span>
+                    )}
                   </div>
                 </div>
 
@@ -407,6 +418,13 @@ function Installations() {
             </p>
             <form onSubmit={handleUpdateInstallation}>
               <div className="form-grid">
+                <CustomerLocationSelect
+                  customerId={editingInstallation.Customer_ID}
+                  locations={locations}
+                  value={editFormData.Location_ID}
+                  onChange={handleEditChange}
+                  label="Installation Location"
+                />
                 <div className="form-group">
                   <label>Installation Date</label>
                   <input type="date" name="Installation_Date" value={editFormData.Installation_Date} onChange={handleEditChange} />

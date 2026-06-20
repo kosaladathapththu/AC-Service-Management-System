@@ -3,14 +3,18 @@ import { Link, useSearchParams } from "react-router-dom";
 import {
   getAllData,
   getCustomerProfile,
+  assignACUnitLocation,
   updateRecord,
 } from "../api/googleSheetApi";
 import CustomerProfileModal from "../components/CustomerProfileModal";
+import CustomerLocationSelect from "../components/CustomerLocationSelect";
+import { findLocation, getLocationLabel } from "../utils/customerLocations";
 import {
   formatCustomerDisplay,
   getRecordCustomerName,
 } from "../utils/customerDisplay";
 import { recordMatchesSearch } from "../utils/recordSearch";
+import { getEffectiveWarrantyStatus } from "../utils/warrantyStatus";
 
 function ACUnits() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -19,6 +23,7 @@ function ACUnits() {
   const [acUnits, setAcUnits] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [installations, setInstallations] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -26,10 +31,12 @@ function ACUnits() {
   const [expandedId, setExpandedId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [profileLoadingId, setProfileLoadingId] = useState("");
+  const [assigningBranchACId, setAssigningBranchACId] = useState("");
   const [selectedProfile, setSelectedProfile] = useState(null);
 
   const [editingUnit, setEditingUnit] = useState(null);
   const [editFormData, setEditFormData] = useState({
+    Location_ID: "",
     AC_Model: "",
     Serial_Number: "",
     Quantity: "",
@@ -50,15 +57,17 @@ function ACUnits() {
       setLoading(true);
       setError("");
 
-      const [acUnitsData, customersData, installationsData] = await Promise.all([
+      const [acUnitsData, customersData, installationsData, locationData] = await Promise.all([
         getAllData("acUnits"),
         getAllData("customers"),
         getAllData("installations"),
+        getAllData("customerLocations"),
       ]);
 
       setAcUnits(acUnitsData);
       setCustomers(customersData);
       setInstallations(installationsData);
+      setLocations(locationData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -119,6 +128,7 @@ function ACUnits() {
     setEditingUnit(unit);
 
     setEditFormData({
+      Location_ID: unit.Location_ID || "",
       AC_Model: unit.AC_Model || "",
       Serial_Number: unit.Serial_Number || "",
       Quantity: unit.Quantity || "",
@@ -135,6 +145,7 @@ function ACUnits() {
     setEditingUnit(null);
 
     setEditFormData({
+      Location_ID: "",
       AC_Model: "",
       Serial_Number: "",
       Quantity: "",
@@ -180,7 +191,10 @@ function ACUnits() {
       setError("");
       setSuccessMessage("");
 
-      await updateRecord("acUnits", "AC_ID", editingUnit.AC_ID, editFormData);
+      await updateRecord("acUnits", "AC_ID", editingUnit.AC_ID, {
+        ...editFormData,
+        Warranty_Status: getEffectiveWarrantyStatus(editFormData),
+      });
 
       setSuccessMessage("AC unit updated successfully.");
       closeEditModal();
@@ -189,6 +203,29 @@ function ACUnits() {
       setError(error.message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleAssignBranch(unit, locationId) {
+    if (!locationId) return;
+
+    try {
+      setAssigningBranchACId(unit.AC_ID);
+      setError("");
+      setSuccessMessage("");
+      await assignACUnitLocation(unit.AC_ID, unit.Customer_ID, locationId);
+      setAcUnits((previous) =>
+        previous.map((item) =>
+          normalizeValue(item.AC_ID) === normalizeValue(unit.AC_ID)
+            ? { ...item, Location_ID: locationId }
+            : item
+        )
+      );
+      setSuccessMessage(`Branch assigned successfully to ${unit.AC_ID}.`);
+    } catch (assignError) {
+      setError(assignError.message);
+    } finally {
+      setAssigningBranchACId("");
     }
   }
 
@@ -357,6 +394,13 @@ function ACUnits() {
           const id = unit.AC_ID || `${group.key}-${index}`;
           const isExpanded = expandedId === id;
           const customerName = getRecordCustomerName(unit, customers);
+          const unitLocation = findLocation(locations, unit.Location_ID);
+          const customerLocations = locations.filter(
+            (location) =>
+              normalizeValue(location.Customer_ID) === normalizeValue(unit.Customer_ID) &&
+              normalizeValue(location.Status || "Active") !== "inactive"
+          );
+          const customerHasBranches = customerLocations.length > 0;
 
           return (
             <div key={id} className="customer-record-row">
@@ -404,6 +448,29 @@ function ACUnits() {
                       <span className="status-badge status-neutral">
                         {unit.Sales_Channel}
                       </span>
+                    )}
+                    {customerHasBranches && (
+                      <label
+                        className={`ac-branch-inline ${unitLocation ? "assigned" : "unassigned"}`}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <span>📍</span>
+                        <select
+                          value={unit.Location_ID || ""}
+                          onChange={(event) => handleAssignBranch(unit, event.target.value)}
+                          disabled={assigningBranchACId === unit.AC_ID}
+                          aria-label={`Assign branch for ${unit.AC_ID}`}
+                        >
+                          <option value="">
+                            {assigningBranchACId === unit.AC_ID ? "Assigning..." : "Select branch"}
+                          </option>
+                          {customerLocations.map((location) => (
+                            <option key={location.Location_ID} value={location.Location_ID}>
+                              {getLocationLabel(location)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
                     )}
 
                     {unit.Quantity && (
@@ -513,6 +580,26 @@ function ACUnits() {
                       <span>{unit.Sales_Channel || "—"}</span>
                     </div>
 
+                    {customerHasBranches && (
+                      <div className="detail-item detail-full ac-branch-detail">
+                        <label>Branch / Location</label>
+                        {unitLocation ? (
+                          <div>
+                            <strong>📍 {getLocationLabel(unitLocation)}</strong>
+                            <span>{unitLocation.Address || "Address not provided"}</span>
+                            <span>
+                              {unitLocation.Contact_Person || "No contact person"}
+                              {unitLocation.Phone ? ` · ${unitLocation.Phone}` : ""}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="branch-unassigned-text">
+                            Branch not assigned. Select the correct branch from this AC row.
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     <div className="detail-item">
                       <label>Warranty Start</label>
                       <span>{formatDate(unit.Warranty_Start_Date)}</span>
@@ -561,6 +648,13 @@ function ACUnits() {
 
             <form onSubmit={handleUpdateACUnit}>
               <div className="form-grid">
+                <CustomerLocationSelect
+                  customerId={editingUnit.Customer_ID}
+                  locations={locations}
+                  value={editFormData.Location_ID}
+                  onChange={handleEditChange}
+                  label="Branch / Location"
+                />
                 <div className="form-group">
                   <label>AC Model</label>
                   <input
@@ -649,13 +743,15 @@ function ACUnits() {
                   <label>Warranty Status</label>
                   <select
                     name="Warranty_Status"
-                    value={editFormData.Warranty_Status}
+                    value={editFormData.Warranty_Status === "Cancelled" ? "Cancelled" : "Active"}
                     onChange={handleEditChange}
                   >
                     <option value="Active">Active</option>
                     <option value="Cancelled">Cancelled</option>
-                    <option value="Expired">Expired</option>
                   </select>
+                  <span className="form-hint">
+                    Effective status: {getEffectiveWarrantyStatus(editFormData)}. Expiry is calculated automatically from the end date.
+                  </span>
                 </div>
               </div>
 

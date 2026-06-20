@@ -4,6 +4,7 @@ import {
   sortRecordsDescending,
 } from "../utils/recordSort";
 import { APPS_SCRIPT_PROJECT } from "../config/sourceSheets";
+import { applyEffectiveWarrantyStatus } from "../utils/warrantyStatus";
 
 const API_URL =
   import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL ||
@@ -28,7 +29,12 @@ export async function getAllData(type) {
     throw new Error(result.message || "Failed to load data");
   }
 
-  return sortRecordsDescending(type, result.data);
+  const records =
+    type === "acUnits"
+      ? result.data.map(applyEffectiveWarrantyStatus)
+      : result.data;
+
+  return sortRecordsDescending(type, records);
 }
 
 export async function getCustomerProfile(customerId) {
@@ -42,7 +48,10 @@ export async function getCustomerProfile(customerId) {
     throw new Error(result.message || "Failed to load customer profile");
   }
 
-  return sortCustomerProfileDescending(result.data);
+  return sortCustomerProfileDescending({
+    ...result.data,
+    acUnits: (result.data?.acUnits || []).map(applyEffectiveWarrantyStatus),
+  });
 }
 
 async function postApi(action, data) {
@@ -81,6 +90,18 @@ export async function addPayment(paymentData) {
 
 export async function addComplaint(complaintData) {
   return postApi("addComplaint", complaintData);
+}
+
+export async function saveCustomerLocation(locationData) {
+  return postApi("saveCustomerLocation", locationData);
+}
+
+export async function assignACUnitLocation(acId, customerId, locationId) {
+  return postApi("assignACUnitLocation", {
+    AC_ID: acId,
+    Customer_ID: customerId,
+    Location_ID: locationId,
+  });
 }
 
 export async function updateRecord(type, idColumn, id, updatedData) {

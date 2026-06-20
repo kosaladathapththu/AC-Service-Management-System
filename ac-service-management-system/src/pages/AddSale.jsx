@@ -8,6 +8,8 @@ import {
 import CustomerSearchSelect, {
   getFilteredCustomers,
 } from "../components/CustomerSearchSelect";
+import CustomerLocationSelect from "../components/CustomerLocationSelect";
+import { emptyLocationData } from "../utils/customerLocations";
 
 function AddSale() {
   const today = new Date().toISOString().split("T")[0];
@@ -27,6 +29,14 @@ function AddSale() {
     };
   }
 
+  function createEmptyLocationEntry(customerId = "") {
+    return {
+      ...emptyLocationData(customerId),
+      _temporaryKey: `branch-${Date.now()}-${Math.random()}`,
+      acUnits: [createEmptyACUnit()],
+    };
+  }
+
   const emptyForm = {
     Customer_ID: "",
     Customer_Name: "",
@@ -36,6 +46,7 @@ function AddSale() {
     Google_Map_Link: "",
     Created_Date: today,
     Notes: "",
+    Location_ID: "",
 
     AC_Model: "",
     Serial_Number: "",
@@ -51,7 +62,12 @@ function AddSale() {
 
   const [saleMode, setSaleMode] = useState("new");
   const [customers, setCustomers] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [formData, setFormData] = useState(emptyForm);
+  const [addBranch, setAddBranch] = useState(false);
+  const [locationEntries, setLocationEntries] = useState([
+    createEmptyLocationEntry(),
+  ]);
   const [acSaleItems, setAcSaleItems] = useState([createEmptyACUnit()]);
   const [customerSearch, setCustomerSearch] = useState("");
 
@@ -72,8 +88,12 @@ function AddSale() {
   async function loadCustomers() {
     try {
       setLoadingCustomers(true);
-      const data = await getAllData("customers");
-      setCustomers(data);
+      const [customerData, locationRows] = await Promise.all([
+        getAllData("customers"),
+        getAllData("customerLocations"),
+      ]);
+      setCustomers(customerData);
+      setLocations(locationRows);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -91,6 +111,8 @@ function AddSale() {
     setCustomerSearch("");
 
     setFormData(emptyForm);
+    setAddBranch(false);
+    setLocationEntries([createEmptyLocationEntry()]);
     setAcSaleItems([createEmptyACUnit()]);
   }
 
@@ -119,6 +141,7 @@ function AddSale() {
         "",
       Created_Date: selectedCustomer?.Created_Date || today,
       Notes: selectedCustomer?.Notes || "",
+      Location_ID: "",
     }));
     latestPhoneRef.current = selectedCustomer?.Phone || "";
     if (selectedCustomer) {
@@ -145,6 +168,77 @@ function AddSale() {
       prev.map((item, itemIndex) =>
         itemIndex === index ? { ...item, [name]: value } : item
       )
+    );
+  }
+
+  function handleLocationChange(index, event) {
+    const { name, value } = event.target;
+    setLocationEntries((previous) =>
+      previous.map((location, locationIndex) => {
+        if (name === "Is_Default" && value === "Yes") {
+          return locationIndex === index
+            ? { ...location, Is_Default: "Yes" }
+            : { ...location, Is_Default: "No" };
+        }
+        return locationIndex === index ? { ...location, [name]: value } : location;
+      })
+    );
+  }
+
+  function addLocationEntry() {
+    setLocationEntries((previous) => [
+      ...previous,
+      createEmptyLocationEntry(formData.Customer_ID),
+    ]);
+  }
+
+  function handleBranchACItemChange(locationIndex, acIndex, event) {
+    const { name, value } = event.target;
+    setLocationEntries((previous) =>
+      previous.map((location, currentLocationIndex) =>
+        currentLocationIndex === locationIndex
+          ? {
+              ...location,
+              acUnits: location.acUnits.map((unit, currentACIndex) =>
+                currentACIndex === acIndex ? { ...unit, [name]: value } : unit
+              ),
+            }
+          : location
+      )
+    );
+  }
+
+  function addBranchACItem(locationIndex) {
+    setLocationEntries((previous) =>
+      previous.map((location, currentLocationIndex) =>
+        currentLocationIndex === locationIndex
+          ? { ...location, acUnits: [...location.acUnits, createEmptyACUnit()] }
+          : location
+      )
+    );
+  }
+
+  function removeBranchACItem(locationIndex, acIndex) {
+    setLocationEntries((previous) =>
+      previous.map((location, currentLocationIndex) =>
+        currentLocationIndex === locationIndex
+          ? {
+              ...location,
+              acUnits:
+                location.acUnits.length === 1
+                  ? location.acUnits
+                  : location.acUnits.filter((_, currentACIndex) => currentACIndex !== acIndex),
+            }
+          : location
+      )
+    );
+  }
+
+  function removeLocationEntry(index) {
+    setLocationEntries((previous) =>
+      previous.length === 1
+        ? previous
+        : previous.filter((_, locationIndex) => locationIndex !== index)
     );
   }
 
@@ -192,7 +286,7 @@ function AddSale() {
           duplicateCustomer ? getDuplicateCustomerMessage(duplicateCustomer) : ""
         );
       }
-    } catch (err) {
+    } catch {
       const foundCustomer = findCustomerByPhone(customers, phone);
       if (!isLatestPhone(phone, latestPhoneRef.current)) return;
 
@@ -237,7 +331,15 @@ function AddSale() {
       setError("");
       setSuccessMessage("");
 
-      const saleItems = getValidACSaleItems(acSaleItems);
+      const branchSales = addBranch
+        ? locationEntries.map((location) => ({
+            location: getLocationPayload(location),
+            acUnits: getValidACSaleItems(location.acUnits),
+          }))
+        : [];
+      const saleItems = addBranch
+        ? branchSales.flatMap((branch) => branch.acUnits)
+        : getValidACSaleItems(acSaleItems);
 
       if (saleItems.length === 0) {
         throw new Error("Please add at least one AC model for this sale.");
@@ -246,7 +348,21 @@ function AddSale() {
       const payload = {
         ...formData,
         acUnits: saleItems,
+        Branch_Sales: branchSales,
       };
+
+      if (
+        addBranch &&
+        locationEntries.some(
+          (location) => !location.Branch_Name.trim() || !location.Address.trim()
+        )
+      ) {
+        throw new Error("Branch name and branch address are required for every branch.");
+      }
+
+      if (addBranch && branchSales.some((branch) => branch.acUnits.length === 0)) {
+        throw new Error("Please add at least one AC unit for every branch.");
+      }
 
       if (saleMode === "new") {
         const existingCustomer =
@@ -272,6 +388,8 @@ function AddSale() {
       );
 
       setFormData(emptyForm);
+      setAddBranch(false);
+      setLocationEntries([createEmptyLocationEntry()]);
       setAcSaleItems([createEmptyACUnit()]);
       setSaleMode("new");
       await loadCustomers();
@@ -284,6 +402,8 @@ function AddSale() {
 
   function handleReset() {
     setFormData(emptyForm);
+    setAddBranch(false);
+    setLocationEntries([createEmptyLocationEntry()]);
     setAcSaleItems([createEmptyACUnit()]);
     setSaleMode("new");
     setCustomerSearch("");
@@ -578,6 +698,124 @@ function AddSale() {
 
         <div className="form-card">
           <div className="form-card-header">
+            <div className="form-card-icon">📍</div>
+            <div>
+              <h3>Branch / Delivery Location</h3>
+              <p>Optional. Single buyers can continue using the customer&apos;s main address.</p>
+            </div>
+          </div>
+
+          <div className="form-grid">
+            {saleMode === "existing" && !addBranch && (
+              <CustomerLocationSelect
+                customerId={formData.Customer_ID}
+                locations={locations}
+                value={formData.Location_ID}
+                onChange={handleChange}
+                disabled={!formData.Customer_ID}
+              />
+            )}
+
+            <div className="form-group full-width">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={addBranch}
+                  onChange={(event) => {
+                    setAddBranch(event.target.checked);
+                    setFormData((previous) => ({ ...previous, Location_ID: "" }));
+                    setLocationEntries([createEmptyLocationEntry(formData.Customer_ID)]);
+                  }}
+                />
+                Add a new branch/location for this sale
+              </label>
+            </div>
+
+            {addBranch && (
+              <div className="sale-location-list full-width">
+                {locationEntries.map((location, index) => (
+                  <section className="edit-location-card" key={location._temporaryKey || index}>
+                    <div className="edit-location-card-header">
+                      <div>
+                        <strong>{index === 0 ? "Sale Delivery Branch" : `Additional Branch ${index}`}</strong>
+                        <small>{index === 0 ? "AC units in this sale will be assigned here" : "Saved under the same customer"}</small>
+                      </div>
+                      {index > 0 && (
+                        <button type="button" className="cancel-btn" onClick={() => removeLocationEntry(index)}>Remove</button>
+                      )}
+                    </div>
+                    <div className="form-grid">
+                      <div className="form-group">
+                        <label>Branch Name <span className="required">*</span></label>
+                        <input name="Branch_Name" value={location.Branch_Name} onChange={(event) => handleLocationChange(index, event)} placeholder="e.g. Kandy Branch" required />
+                      </div>
+                      <div className="form-group">
+                        <label>Contact Person</label>
+                        <input name="Contact_Person" value={location.Contact_Person} onChange={(event) => handleLocationChange(index, event)} placeholder="Branch contact name" />
+                      </div>
+                      <div className="form-group">
+                        <label>Branch Phone</label>
+                        <input name="Phone" value={location.Phone} onChange={(event) => handleLocationChange(index, event)} placeholder="e.g. 081 123 4567" />
+                      </div>
+                      <div className="form-group">
+                        <label>Branch Address <span className="required">*</span></label>
+                        <input name="Address" value={location.Address} onChange={(event) => handleLocationChange(index, event)} placeholder="Full service address" required />
+                      </div>
+                      <div className="form-group">
+                        <label>Google Map Link</label>
+                        <input name="Google_Map_Link" value={location.Google_Map_Link} onChange={(event) => handleLocationChange(index, event)} placeholder="https://maps.google.com/..." />
+                      </div>
+                      <div className="form-group">
+                        <label>Default Location</label>
+                        <select name="Is_Default" value={location.Is_Default} onChange={(event) => handleLocationChange(index, event)}>
+                          <option value="No">No</option>
+                          <option value="Yes">Yes</option>
+                        </select>
+                      </div>
+                      <div className="form-group full-width">
+                        <label>Location Notes</label>
+                        <textarea name="Notes" value={location.Notes} onChange={(event) => handleLocationChange(index, event)} rows="2" />
+                      </div>
+                    </div>
+
+                    <div className="branch-ac-section">
+                      <div className="branch-ac-section-header">
+                        <div>
+                          <h4>AC Units &amp; Invoices for this Branch</h4>
+                          <p>Every unit entered here will be linked to {location.Branch_Name || `Branch ${index + 1}`}.</p>
+                        </div>
+                      </div>
+
+                      <div className="multi-ac-list">
+                        {location.acUnits.map((item, acIndex) => (
+                          <ACSaleItemFields
+                            key={acIndex}
+                            item={item}
+                            index={acIndex}
+                            canRemove={location.acUnits.length > 1}
+                            onChange={(event) => handleBranchACItemChange(index, acIndex, event)}
+                            onRemove={() => removeBranchACItem(index, acIndex)}
+                          />
+                        ))}
+                      </div>
+
+                      <button type="button" className="btn-secondary" onClick={() => addBranchACItem(index)}>
+                        + Add Another AC to this Branch
+                      </button>
+                    </div>
+                  </section>
+                ))}
+
+                <button type="button" className="btn-secondary add-another-branch-btn" onClick={addLocationEntry}>
+                  + Add Another Branch
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {!addBranch && (<div className="form-card">
+          <div className="form-card-header">
             <div className="form-card-icon">❄️</div>
             <div>
               <h3>AC Unit &amp; Sale Details</h3>
@@ -716,8 +954,10 @@ function AddSale() {
                     >
                       <option value="Active">Active</option>
                       <option value="Cancelled">Cancelled</option>
-                      <option value="Expired">Expired</option>
                     </select>
+                    <span className="form-hint">
+                      Automatically becomes Expired after the warranty end date.
+                    </span>
                   </div>
                 </div>
               </div>
@@ -727,7 +967,7 @@ function AddSale() {
           <button type="button" className="btn-secondary" onClick={addACItem}>
             + Add Another AC Model
           </button>
-        </div>
+        </div>)}
 
         <div className="form-actions">
           <button
@@ -758,6 +998,77 @@ function AddSale() {
       </form>
     </div>
   );
+}
+
+function ACSaleItemFields({ item, index, canRemove, onChange, onRemove }) {
+  return (
+    <div className="multi-ac-item branch-ac-item">
+      <div className="multi-ac-item-header">
+        <div>
+          <h4>AC Unit {index + 1}</h4>
+          <p>Model, invoice, pricing and warranty for this branch.</p>
+        </div>
+        {canRemove && <button type="button" className="btn-secondary" onClick={onRemove}>Remove AC</button>}
+      </div>
+
+      <div className="form-grid">
+        <div className="form-group">
+          <label>AC Model <span className="required">*</span></label>
+          <input name="AC_Model" value={item.AC_Model} onChange={onChange} placeholder="e.g. Samsung WindFree 18000 BTU" required />
+        </div>
+        <div className="form-group">
+          <label>Serial Number</label>
+          <input name="Serial_Number" value={item.Serial_Number} onChange={onChange} placeholder="e.g. SN-2024-00123" />
+        </div>
+        <div className="form-group">
+          <label>Invoice Number</label>
+          <input name="Invoice_Number" value={item.Invoice_Number} onChange={onChange} placeholder="e.g. 1337850" />
+        </div>
+        <div className="form-group">
+          <label>Quantity</label>
+          <input type="number" name="Quantity" value={item.Quantity} onChange={onChange} min="1" />
+        </div>
+        <div className="form-group">
+          <label>Price (LKR)</label>
+          <input type="number" name="Price" value={item.Price} onChange={onChange} min="0" placeholder="e.g. 185000" />
+        </div>
+        <div className="form-group">
+          <label>Purchase Date</label>
+          <input type="date" name="Purchase_Date" value={item.Purchase_Date} onChange={onChange} />
+        </div>
+        <div className="form-group">
+          <label>Sales Channel</label>
+          <select name="Sales_Channel" value={item.Sales_Channel} onChange={onChange}>
+            <option value="Showroom">Showroom</option>
+            <option value="Online">Online</option>
+          </select>
+        </div>
+        <div className="form-group">
+          <label>Warranty Start Date</label>
+          <input type="date" name="Warranty_Start_Date" value={item.Warranty_Start_Date} onChange={onChange} />
+        </div>
+        <div className="form-group">
+          <label>Warranty End Date</label>
+          <input type="date" name="Warranty_End_Date" value={item.Warranty_End_Date} onChange={onChange} />
+        </div>
+        <div className="form-group">
+          <label>Warranty Status</label>
+          <select name="Warranty_Status" value={item.Warranty_Status} onChange={onChange}>
+            <option value="Active">Active</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+          <span className="form-hint">Automatically becomes Expired after the warranty end date.</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getLocationPayload(location) {
+  const { acUnits, _temporaryKey, ...locationData } = location;
+  void acUnits;
+  void _temporaryKey;
+  return locationData;
 }
 
 function getValidACSaleItems(items) {

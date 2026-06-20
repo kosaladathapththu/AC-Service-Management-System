@@ -7,6 +7,8 @@ import {
   sendManualReminder,
 } from "../api/googleSheetApi";
 import CustomerProfileModal from "../components/CustomerProfileModal";
+import CustomerLocationSelect from "../components/CustomerLocationSelect";
+import { findLocation, getLocationLabel } from "../utils/customerLocations";
 import {
   formatCustomerDisplay,
   getRecordCustomerName,
@@ -15,10 +17,11 @@ import { recordMatchesSearch } from "../utils/recordSearch";
 
 function Services() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeFilter = searchParams.get("filter") || "all";
+  const activeFilter = searchParams.get("filter") || "pending";
 
   const [services, setServices] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sendingReminderId, setSendingReminderId] = useState("");
@@ -27,12 +30,13 @@ function Services() {
   const [successMessage, setSuccessMessage] = useState("");
   const [expandedId, setExpandedId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [dateOrder, setDateOrder] = useState("upcoming");
+  const [dateOrder, setDateOrder] = useState("nearest");
   const [profileLoadingId, setProfileLoadingId] = useState("");
   const [selectedProfile, setSelectedProfile] = useState(null);
 
   const [editingService, setEditingService] = useState(null);
   const [editFormData, setEditFormData] = useState({
+    Location_ID: "",
     Service_Date: "",
     Service_Year: "",
     Service_No: "",
@@ -56,13 +60,15 @@ function Services() {
       setLoading(true);
       setError("");
 
-      const [servicesData, customersData] = await Promise.all([
+      const [servicesData, customersData, locationData] = await Promise.all([
         getAllData("services"),
         getAllData("customers"),
+        getAllData("customerLocations"),
       ]);
 
       setServices(servicesData);
       setCustomers(customersData);
+      setLocations(locationData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -72,12 +78,6 @@ function Services() {
 
   function changeFilter(filterName) {
     setExpandedId(null);
-
-    if (filterName === "all") {
-      setSearchParams({});
-      return;
-    }
-
     setSearchParams({ filter: filterName });
   }
 
@@ -104,7 +104,7 @@ function Services() {
     }
 
     if (activeFilter === "pending") {
-      return status === "pending";
+      return status === "pending" && !isPastDate(service.Service_Date);
     }
 
     if (activeFilter === "completed") {
@@ -198,6 +198,7 @@ function Services() {
     setEditingService(service);
 
     setEditFormData({
+      Location_ID: service.Location_ID || "",
       Service_Date: formatDateForInput(service.Service_Date),
       Service_Year: service.Service_Year || "",
       Service_No: service.Service_No || "",
@@ -217,6 +218,7 @@ function Services() {
     setEditingService(null);
 
     setEditFormData({
+      Location_ID: "",
       Service_Date: "",
       Service_Year: "",
       Service_No: "",
@@ -516,7 +518,8 @@ function Services() {
               disabled={isPendingDateList}
               onChange={(event) => setDateOrder(event.target.value)}
             >
-              <option value="upcoming">Nearest first</option>
+              <option value="nearest">Nearest to today</option>
+              <option value="upcoming">Nearest upcoming first</option>
               <option value="latest">Latest first</option>
               <option value="oldest">Oldest first</option>
             </select>
@@ -659,6 +662,9 @@ function Services() {
                       <span className="status-badge status-neutral">
                         {service.Service_Category}
                       </span>
+                    )}
+                    {findLocation(locations, service.Location_ID) && (
+                      <span className="status-neutral">📍 {getLocationLabel(findLocation(locations, service.Location_ID))}</span>
                     )}
 
                     <span
@@ -839,6 +845,13 @@ function Services() {
 
             <form onSubmit={handleUpdateService}>
               <div className="form-grid">
+                <CustomerLocationSelect
+                  customerId={editingService.Customer_ID}
+                  locations={locations}
+                  value={editFormData.Location_ID}
+                  onChange={handleEditChange}
+                  label="Service Location"
+                />
                 <div className="form-group">
                   <label>Service Date</label>
                   <input
@@ -1047,9 +1060,36 @@ function sortServicesByDate(services, dateOrder) {
 
     if (dateOrder === "latest") return dateB - dateA;
     if (dateOrder === "oldest") return dateA - dateB;
+    if (dateOrder === "nearest") {
+      return compareDatesNearestToToday(dateA, dateB);
+    }
 
     return dateA - dateB;
   });
+}
+
+function compareDatesNearestToToday(dateA, dateB) {
+  const invalidDate = Number.MAX_SAFE_INTEGER;
+  if (dateA === invalidDate && dateB === invalidDate) return 0;
+  if (dateA === invalidDate) return 1;
+  if (dateB === invalidDate) return -1;
+
+  const today = new Date();
+  const todayTime = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  ).getTime();
+  const distanceA = Math.abs(dateA - todayTime);
+  const distanceB = Math.abs(dateB - todayTime);
+
+  if (distanceA !== distanceB) return distanceA - distanceB;
+
+  const aIsUpcoming = dateA >= todayTime;
+  const bIsUpcoming = dateB >= todayTime;
+  if (aIsUpcoming !== bIsUpcoming) return aIsUpcoming ? -1 : 1;
+
+  return dateA - dateB;
 }
 
 function getDateTime(value) {

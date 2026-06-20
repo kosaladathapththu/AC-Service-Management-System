@@ -3,18 +3,21 @@ import { addComplaint, getAllData } from "../api/googleSheetApi";
 import CustomerSearchSelect, {
   getFilteredCustomers,
 } from "../components/CustomerSearchSelect";
+import CustomerLocationSelect from "../components/CustomerLocationSelect";
 
 function AddComplaint() {
   const today = new Date().toISOString().split("T")[0];
 
   const [customers, setCustomers] = useState([]);
   const [acUnits, setAcUnits] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [filteredACUnits, setFilteredACUnits] = useState([]);
   const [customerSearch, setCustomerSearch] = useState("");
 
   const [formData, setFormData] = useState({
     Customer_ID: "",
     AC_ID: "",
+    Location_ID: "",
     Complaint_Date: today,
     Issue_Description: "",
     Technician_Name: "",
@@ -39,11 +42,15 @@ function AddComplaint() {
       setLoadingData(true);
       setError("");
 
-      const customersData = await getAllData("customers");
-      const acUnitsData = await getAllData("acUnits");
+      const [customersData, acUnitsData, locationData] = await Promise.all([
+        getAllData("customers"),
+        getAllData("acUnits"),
+        getAllData("customerLocations"),
+      ]);
 
       setCustomers(customersData);
       setAcUnits(acUnitsData);
+      setLocations(locationData);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -57,6 +64,12 @@ function AddComplaint() {
     if (name === "Customer_ID") {
       selectCustomerById(value);
 
+      return;
+    }
+
+    if (name === "AC_ID") {
+      const unit = acUnits.find((item) => normalizeValue(item.AC_ID) === normalizeValue(value));
+      setFormData((previous) => ({ ...previous, AC_ID: value, Location_ID: unit?.Location_ID || "" }));
       return;
     }
 
@@ -93,6 +106,7 @@ function AddComplaint() {
       setFormData({
         Customer_ID: "",
         AC_ID: "",
+        Location_ID: "",
         Complaint_Date: today,
         Issue_Description: "",
         Technician_Name: "",
@@ -140,6 +154,7 @@ function AddComplaint() {
       ...previousData,
       Customer_ID: customerId,
       AC_ID: "",
+      Location_ID: "",
     }));
 
     if (customer) {
@@ -236,6 +251,15 @@ function AddComplaint() {
                 ))}
               </select>
             </div>
+
+            <CustomerLocationSelect
+              customerId={formData.Customer_ID}
+              locations={locations}
+              value={formData.Location_ID}
+              onChange={handleChange}
+              disabled={!formData.Customer_ID}
+              label="Complaint Location"
+            />
 
             <div className="form-group">
               <label>Complaint Date *</label>
