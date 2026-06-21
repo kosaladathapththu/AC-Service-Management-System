@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { getAllData, getCustomerProfile, getDashboardData } from "../api/googleSheetApi";
 import PaymentEvidence from "../components/PaymentEvidence";
@@ -10,9 +10,12 @@ function Dashboard() {
   const [notInstalledCount, setNotInstalledCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState("");
   const [error, setError] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
   const [selectedProfile, setSelectedProfile] = useState(null);
+  const profileCacheRef = useRef(new Map());
+  const profileRequestRef = useRef(0);
 
   useEffect(() => {
     loadDashboardData();
@@ -54,16 +57,40 @@ function Dashboard() {
 
     if (!customerId || customerId === "-") return;
 
+    const cachedProfile = profileCacheRef.current.get(customerId);
+    if (cachedProfile) {
+      setProfileError("");
+      setSelectedProfile(cachedProfile);
+      return;
+    }
+
+    const requestId = ++profileRequestRef.current;
+    setSelectedProfile({ customer });
+    setProfileError("");
+
     try {
       setProfileLoading(true);
-      setError("");
       const profile = await getCustomerProfile(customerId);
-      setSelectedProfile(profile);
+      profileCacheRef.current.set(customerId, profile);
+      if (profileRequestRef.current === requestId) {
+        setSelectedProfile(profile);
+      }
     } catch (error) {
-      setError(error.message);
+      if (profileRequestRef.current === requestId) {
+        setProfileError(error.message);
+      }
     } finally {
-      setProfileLoading(false);
+      if (profileRequestRef.current === requestId) {
+        setProfileLoading(false);
+      }
     }
+  }
+
+  function closeCustomerProfile() {
+    profileRequestRef.current += 1;
+    setProfileLoading(false);
+    setProfileError("");
+    setSelectedProfile(null);
   }
 
   if (loading) {
@@ -77,10 +104,12 @@ function Dashboard() {
   return (
     <div className="dashboard-page">
       <div className="page-header">
-        <h2>Dashboard</h2>
-        <p>
-          Main action center for services, payments, complaints, and warranties.
-        </p>
+        <div>
+          <span className="page-eyebrow">Operations overview</span>
+          <h2>{getGreeting()}, Administrator</h2>
+          <p>Main action center for services, payments, complaints, and warranties.</p>
+        </div>
+        <div className="live-status"><span /> Live workspace</div>
       </div>
 
       <CustomerLookup
@@ -98,6 +127,7 @@ function Dashboard() {
           note="All registered customers"
           link="/customers"
           type="neutral"
+          icon="ti-users"
         />
 
         <DashboardActionCard
@@ -106,6 +136,7 @@ function Dashboard() {
           note="Pending services this month"
           link="/services?filter=due-this-month"
           type="info"
+          icon="ti-calendar-event"
         />
 
         <DashboardActionCard
@@ -114,6 +145,7 @@ function Dashboard() {
           note="Previous services not completed"
           link="/services?filter=overdue"
           type="danger"
+          icon="ti-clock-exclamation"
         />
 
         <DashboardActionCard
@@ -122,6 +154,7 @@ function Dashboard() {
           note="Customers waiting to pay"
           link="/payments?filter=pending"
           type="warning"
+          icon="ti-wallet"
         />
 
         <DashboardActionCard
@@ -130,6 +163,7 @@ function Dashboard() {
           note="Payment due date passed"
           link="/payments?filter=overdue"
           type="danger"
+          icon="ti-alert-triangle"
         />
 
         <DashboardActionCard
@@ -138,6 +172,7 @@ function Dashboard() {
           note="Currently valid warranties"
           link="/ac-units?filter=active-warranty"
           type="success"
+          icon="ti-shield-check"
         />
 
         <DashboardActionCard
@@ -146,6 +181,7 @@ function Dashboard() {
           note="Sold units waiting for installation"
           link="/ac-units?filter=not-installed"
           type="warning"
+          icon="ti-package"
         />
 
         <DashboardActionCard
@@ -154,6 +190,7 @@ function Dashboard() {
           note="Complaints needing action"
           link="/complaints?filter=open"
           type="danger"
+          icon="ti-message-exclamation"
         />
       </div>
 
@@ -195,7 +232,9 @@ function Dashboard() {
       {selectedProfile && (
         <CustomerProfileModal
           profile={selectedProfile}
-          onClose={() => setSelectedProfile(null)}
+          loading={profileLoading}
+          error={profileError}
+          onClose={closeCustomerProfile}
         />
       )}
     </div>
@@ -270,7 +309,56 @@ function CustomerLookup({
   );
 }
 
-function CustomerProfileModal({ profile, onClose }) {
+function CustomerProfileModal({ profile, loading, error, onClose }) {
+  if (loading || error) {
+    const customerName = getValue(profile?.customer, [
+      "Customer_Name",
+      "Customer Name",
+      "name",
+    ]);
+
+    return (
+      <div className="modal-overlay customer-profile-loading-overlay">
+        <div className="modal-card dashboard-profile-modal customer-profile-loading-modal">
+          <div className="modal-header">
+            <div>
+              <span className="profile-loading-eyebrow">Customer profile</span>
+              <h3>{customerName}</h3>
+            </div>
+            <button className="close-btn" onClick={onClose} aria-label="Close">×</button>
+          </div>
+
+          {error ? (
+            <div className="profile-load-error">
+              <i className="ti ti-alert-circle" aria-hidden="true" />
+              <div>
+                <strong>Could not load customer details</strong>
+                <p>{error}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="profile-loading-content" role="status" aria-live="polite">
+              <div className="profile-loading-spinner" aria-hidden="true">
+                <span />
+              </div>
+              <h4>Loading customer details</h4>
+              <p>Collecting units, services, payments, and complaints…</p>
+              <div className="profile-skeleton-grid" aria-hidden="true">
+                {[0, 1, 2, 3].map((item) => (
+                  <div className="profile-skeleton-card" key={item}>
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const {
     customer,
     acUnits = [],
@@ -285,21 +373,61 @@ function CustomerProfileModal({ profile, onClose }) {
   const phone = getValue(customer, ["Phone", "phone"]);
   const email = getValue(customer, ["Email", "email"]);
   const address = getValue(customer, ["Address", "address"]);
+  const initials = customerName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+  const profileCounts = [
+    { label: "Units", value: acUnits.length, icon: "ti-air-conditioning", type: "units" },
+    { label: "Installs", value: installations.length, icon: "ti-tool", type: "installs" },
+    { label: "Services", value: services.length, icon: "ti-settings", type: "services" },
+    { label: "Payments", value: payments.length, icon: "ti-wallet", type: "payments" },
+    { label: "Complaints", value: complaints.length, icon: "ti-message-report", type: "complaints" },
+  ];
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-card dashboard-profile-modal">
-        <div className="modal-header">
-          <h3>{customerName}</h3>
-          <button className="close-btn" onClick={onClose}>×</button>
+    <div className="modal-overlay customer-profile-loaded-overlay">
+      <div className="modal-card dashboard-profile-modal customer-profile-loaded-modal">
+        <div className="customer-profile-hero">
+          <div className="customer-profile-avatar" aria-hidden="true">{initials || "C"}</div>
+          <div className="customer-profile-identity">
+            <span className="customer-profile-label">Customer profile</span>
+            <h3>{customerName}</h3>
+            <span className="customer-id-pill">{customerId}</span>
+          </div>
+          <button className="close-btn customer-profile-close" onClick={onClose} aria-label="Close">×</button>
         </div>
 
-        <p className="modal-subtitle">
-          {customerId} | {phone} | {email}
-        </p>
-        <p className="dashboard-profile-address">{address}</p>
+        <div className="customer-profile-contact-grid">
+          <div className="customer-contact-item">
+            <i className="ti ti-phone" aria-hidden="true" />
+            <div><small>Phone</small><strong>{phone}</strong></div>
+          </div>
+          <div className="customer-contact-item">
+            <i className="ti ti-mail" aria-hidden="true" />
+            <div><small>Email</small><strong>{email}</strong></div>
+          </div>
+          <div className="customer-contact-item customer-address-item">
+            <i className="ti ti-map-pin" aria-hidden="true" />
+            <div><small>Service address</small><strong>{address}</strong></div>
+          </div>
+        </div>
 
-        <DashboardProfileSection title="AC Units" count={acUnits.length}>
+        <div className="customer-profile-counts" aria-label="Customer record summary">
+          {profileCounts.map((item) => (
+            <div className={`profile-count-card profile-count-${item.type}`} key={item.label}>
+              <i className={`ti ${item.icon}`} aria-hidden="true" />
+              <div><strong>{item.value}</strong><span>{item.label}</span></div>
+            </div>
+          ))}
+        </div>
+
+        <div className="customer-profile-sections">
+
+        <DashboardProfileSection title="AC Units" count={acUnits.length} icon="ti-air-conditioning" type="units">
           {acUnits.map((unit, index) => (
             <MiniRecord key={unit.AC_ID || index} id={unit.AC_ID}>
               <span>{unit.AC_Model || "-"}</span>
@@ -311,7 +439,7 @@ function CustomerProfileModal({ profile, onClose }) {
           ))}
         </DashboardProfileSection>
 
-        <DashboardProfileSection title="Installations" count={installations.length}>
+        <DashboardProfileSection title="Installations" count={installations.length} icon="ti-tool" type="installs">
           {installations.map((item, index) => (
             <MiniRecord key={item.Installation_ID || index} id={item.Installation_ID}>
               <span>AC: {item.AC_ID || "-"}</span>
@@ -323,7 +451,7 @@ function CustomerProfileModal({ profile, onClose }) {
           ))}
         </DashboardProfileSection>
 
-        <DashboardProfileSection title="Services" count={services.length}>
+        <DashboardProfileSection title="Services" count={services.length} icon="ti-settings" type="services">
           {services.map((item, index) => (
             <MiniRecord key={item.Service_ID || index} id={item.Service_ID}>
               <span>AC: {item.AC_ID || "-"}</span>
@@ -335,7 +463,7 @@ function CustomerProfileModal({ profile, onClose }) {
           ))}
         </DashboardProfileSection>
 
-        <DashboardProfileSection title="Payments" count={payments.length}>
+        <DashboardProfileSection title="Payments" count={payments.length} icon="ti-wallet" type="payments">
           {payments.map((item, index) => {
             const evidence = getPaymentEvidence(item);
 
@@ -357,7 +485,7 @@ function CustomerProfileModal({ profile, onClose }) {
           })}
         </DashboardProfileSection>
 
-        <DashboardProfileSection title="Complaints" count={complaints.length}>
+        <DashboardProfileSection title="Complaints" count={complaints.length} icon="ti-message-report" type="complaints">
           {complaints.map((item, index) => (
             <MiniRecord key={item.Complaint_ID || index} id={item.Complaint_ID}>
               <span>AC: {item.AC_ID || "-"}</span>
@@ -368,19 +496,25 @@ function CustomerProfileModal({ profile, onClose }) {
             </MiniRecord>
           ))}
         </DashboardProfileSection>
+        </div>
       </div>
     </div>
   );
 }
 
-function DashboardProfileSection({ title, count, children }) {
+function DashboardProfileSection({ title, count, children, icon, type }) {
   return (
-    <div className="dashboard-profile-section">
+    <div className={`dashboard-profile-section profile-section-${type}`}>
       <div className="dashboard-profile-section-header">
-        <h4>{title}</h4>
+        <h4><i className={`ti ${icon}`} aria-hidden="true" />{title}</h4>
         <span>{count}</span>
       </div>
-      {count === 0 ? <p>No records found.</p> : <div>{children}</div>}
+      {count === 0 ? (
+        <div className="profile-section-empty">
+          <i className="ti ti-circle-check" aria-hidden="true" />
+          <p>No records found</p>
+        </div>
+      ) : <div className="profile-section-records">{children}</div>}
     </div>
   );
 }
@@ -394,18 +528,28 @@ function MiniRecord({ id, children }) {
   );
 }
 
-function DashboardActionCard({ title, value, note, link, type }) {
+function DashboardActionCard({ title, value, note, link, type, icon }) {
   return (
     <Link to={link} className={`dashboard-action-card dashboard-action-${type}`}>
+      <div className="dashboard-action-icon"><i className={`ti ${icon}`} /></div>
       <div>
         <p className="dashboard-action-title">{title}</p>
         <h3>{value}</h3>
         <span>{note}</span>
       </div>
 
-      <div className="dashboard-action-arrow">View</div>
+      <div className="dashboard-action-arrow" aria-label={`View ${title}`}>
+        <i className="ti ti-arrow-up-right" />
+      </div>
     </Link>
   );
+}
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
 }
 
 function ReminderSection({ title, description, type, data = [] }) {

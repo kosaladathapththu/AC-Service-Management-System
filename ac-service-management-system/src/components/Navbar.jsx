@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-function Navbar() {
+function Navbar({ onMenuOpen }) {
   const [theme, setTheme] = useState(() =>
     document.documentElement.dataset.theme === "dark" ? "dark" : "light"
   );
@@ -15,6 +15,14 @@ function Navbar() {
 
   return (
     <header className="navbar">
+      <button
+        type="button"
+        className="mobile-menu-btn"
+        onClick={onMenuOpen}
+        aria-label="Open navigation"
+      >
+        <i className="ti ti-menu-2" aria-hidden="true" />
+      </button>
       <div className="navbar-title">
         <h1>Supun Group Of Companies - AC Service Management</h1>
         <p>Welcome to your dashboard</p>
@@ -33,6 +41,7 @@ function Navbar() {
         </button>
 
         <div className="admin-box">
+          <span className="admin-status-dot" aria-hidden="true" />
           <span>Admin</span>
         </div>
       </div>
@@ -41,3 +50,4 @@ function Navbar() {
 }
 
 export default Navbar;
+
