@@ -46,12 +46,12 @@ const navGroups = [
   },
 ];
 
-function Sidebar({ open = false, onClose }) {
+function Sidebar() {
   return (
-    <aside className={`sidebar${open ? " sidebar-open" : ""}`}>
+    <aside className="sidebar">
       {/* Logo */}
       <div className="logo-box">
-        <NavLink to="/" className="sidebar-logo-link" aria-label="Go to dashboard" onClick={onClose}>
+        <NavLink to="/" className="sidebar-logo-link" aria-label="Go to dashboard">
           <img src={logoImage} alt="Supun Group of Companies" className="sidebar-logo" />
         </NavLink>
       </div>
@@ -69,7 +69,6 @@ function Sidebar({ open = false, onClose }) {
                 className={({ isActive }) =>
                   isActive ? "nav-item active" : "nav-item"
                 }
-                onClick={onClose}
               >
                 <i className={`ti ${item.icon}`}></i>
                 <span>{item.label}</span>

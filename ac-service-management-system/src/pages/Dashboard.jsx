@@ -77,12 +77,10 @@ function Dashboard() {
   return (
     <div className="dashboard-page">
       <div className="page-header">
-        <div>
-          <span className="page-eyebrow">Operations overview</span>
-          <h2>{getGreeting()}, Administrator</h2>
-          <p>Main action center for services, payments, complaints, and warranties.</p>
-        </div>
-        <div className="live-status"><span /> Live workspace</div>
+        <h2>Dashboard</h2>
+        <p>
+          Main action center for services, payments, complaints, and warranties.
+        </p>
       </div>
 
       <CustomerLookup
@@ -100,7 +98,6 @@ function Dashboard() {
           note="All registered customers"
           link="/customers"
           type="neutral"
-          icon="ti-users"
         />
 
         <DashboardActionCard
@@ -109,7 +106,6 @@ function Dashboard() {
           note="Pending services this month"
           link="/services?filter=due-this-month"
           type="info"
-          icon="ti-calendar-event"
         />
 
         <DashboardActionCard
@@ -118,7 +114,6 @@ function Dashboard() {
           note="Previous services not completed"
           link="/services?filter=overdue"
           type="danger"
-          icon="ti-clock-exclamation"
         />
 
         <DashboardActionCard
@@ -127,7 +122,6 @@ function Dashboard() {
           note="Customers waiting to pay"
           link="/payments?filter=pending"
           type="warning"
-          icon="ti-wallet"
         />
 
         <DashboardActionCard
@@ -136,7 +130,6 @@ function Dashboard() {
           note="Payment due date passed"
           link="/payments?filter=overdue"
           type="danger"
-          icon="ti-alert-triangle"
         />
 
         <DashboardActionCard
@@ -145,7 +138,6 @@ function Dashboard() {
           note="Currently valid warranties"
           link="/ac-units?filter=active-warranty"
           type="success"
-          icon="ti-shield-check"
         />
 
         <DashboardActionCard
@@ -154,7 +146,6 @@ function Dashboard() {
           note="Sold units waiting for installation"
           link="/ac-units?filter=not-installed"
           type="warning"
-          icon="ti-package"
         />
 
         <DashboardActionCard
@@ -163,7 +154,6 @@ function Dashboard() {
           note="Complaints needing action"
           link="/complaints?filter=open"
           type="danger"
-          icon="ti-message-exclamation"
         />
       </div>
 
@@ -404,28 +394,18 @@ function MiniRecord({ id, children }) {
   );
 }
 
-function DashboardActionCard({ title, value, note, link, type, icon }) {
+function DashboardActionCard({ title, value, note, link, type }) {
   return (
     <Link to={link} className={`dashboard-action-card dashboard-action-${type}`}>
-      <div className="dashboard-action-icon"><i className={`ti ${icon}`} /></div>
       <div>
         <p className="dashboard-action-title">{title}</p>
         <h3>{value}</h3>
         <span>{note}</span>
       </div>
 
-      <div className="dashboard-action-arrow" aria-label={`View ${title}`}>
-        <i className="ti ti-arrow-up-right" />
-      </div>
+      <div className="dashboard-action-arrow">View</div>
     </Link>
   );
-}
-
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
 }
 
 function ReminderSection({ title, description, type, data = [] }) {
