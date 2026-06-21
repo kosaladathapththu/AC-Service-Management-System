@@ -83,6 +83,12 @@ Create `.env` in the project root:
 
 ```env
 VITE_GOOGLE_APPS_SCRIPT_URL=https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec
+VITE_ONLINE_ORDERS_SHEET_ID=YOUR_ONLINE_ORDERS_SHEET_ID
+VITE_ONLINE_ORDERS_SHEET_GID=YOUR_ONLINE_ORDERS_TAB_GID
+VITE_SHOWROOM_SHEET_ID=YOUR_SHOWROOM_SHEET_ID
+VITE_SHOWROOM_SHEET_GID=YOUR_SHOWROOM_TAB_GID
+VITE_SYSTEM_DATABASE_SHEET_ID=YOUR_SYSTEM_DATABASE_SHEET_ID
+VITE_SYSTEM_DATABASE_SHEET_GID=YOUR_SYSTEM_DATABASE_TAB_GID
 ```
 
 Do not commit private deployment URLs or credentials. Vite exposes variables prefixed with `VITE_` to browser code, so the Apps Script endpoint must enforce appropriate access and validation.
@@ -96,6 +102,15 @@ The frontend communicates with a deployed Apps Script web app. Supporting script
 - `apps-script-full-sync-patch.gs` — extended synchronization operations
 
 Deploy the Apps Script project as a web app, grant only the access your organization requires, and place its `/exec` URL in `.env`.
+
+Store backend IDs in **Apps Script → Project Settings → Script Properties** instead of committing them:
+
+| Script property | Value |
+| --- | --- |
+| `SYSTEM_SPREADSHEET_ID` | Main database spreadsheet ID |
+| `ONLINE_SOURCE_SPREADSHEET_ID` | Online-orders spreadsheet ID |
+| `SHOWROOM_SOURCE_SPREADSHEET_ID` | Showroom spreadsheet ID |
+| `PAYMENT_EVIDENCE_FOLDER_ID` | Private Drive folder ID for evidence |
 
 ## 📜 Available commands
 
