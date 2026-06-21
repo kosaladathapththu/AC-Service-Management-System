@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="src/assets/supun-logo.png" alt="Supun Group of Companies" width="180" />
+  <img src="ac-service-management-system/src/assets/supun-logo.png" alt="Supun Group of Companies" width="180" />
 
   # ❄️ AC Service Management System
 
