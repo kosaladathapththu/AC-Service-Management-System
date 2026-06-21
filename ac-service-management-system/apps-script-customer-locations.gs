@@ -13,7 +13,7 @@
  */
 
 var CUSTOMER_LOCATION_PATCH = {
-  spreadsheetId: "1ED6NXaLWpPxK0RJy7f4gIUqbyPNB9LHGIyedbU6VOuE",
+  spreadsheetId: PropertiesService.getScriptProperties().getProperty("SYSTEM_SPREADSHEET_ID"),
   locationSheet: "Customer_Locations",
   locationHeaders: [
     "Location_ID",

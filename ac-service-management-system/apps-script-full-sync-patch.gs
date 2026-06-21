@@ -8,12 +8,14 @@
  *   Online AC + Showroom AC -> AC Service Management Database
  */
 
-const SYNC_PATCH_PAYMENT_EVIDENCE_FOLDER_ID = "1vuN1-esqamsbXZTAfRRlTerAHCfvPW2f";
+const SYNC_PATCH_PROPERTIES = PropertiesService.getScriptProperties();
+const SYNC_PATCH_PAYMENT_EVIDENCE_FOLDER_ID =
+  SYNC_PATCH_PROPERTIES.getProperty("PAYMENT_EVIDENCE_FOLDER_ID");
 
 var SYNC_PATCH_CONFIG = {
-  systemSpreadsheetId: "1ED6NXaLWpPxK0RJy7f4gIUqbyPNB9LHGIyedbU6VOuE",
-  onlineSourceSpreadsheetId: "1hPQxj4XcrbnEp7eirGji8eRbMbjxi4Lb9qiz0BXe-qg",
-  showroomSourceSpreadsheetId: "1BHp_irxumTPg2qY9Nz6V6WsRm9DjM_bOOi8-XyDwYoQ",
+  systemSpreadsheetId: SYNC_PATCH_PROPERTIES.getProperty("SYSTEM_SPREADSHEET_ID"),
+  onlineSourceSpreadsheetId: SYNC_PATCH_PROPERTIES.getProperty("ONLINE_SOURCE_SPREADSHEET_ID"),
+  showroomSourceSpreadsheetId: SYNC_PATCH_PROPERTIES.getProperty("SHOWROOM_SOURCE_SPREADSHEET_ID"),
   sheets: {
     customers: "Customers",
     acUnits: "AC_Units",
